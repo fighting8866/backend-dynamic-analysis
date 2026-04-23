@@ -1,0 +1,66 @@
+{
+  "scenarios": [
+    {
+      "id": "low",
+      "label": "低峰价情景",
+      "p_s": 0.35,
+      "peak_price": 0.729,
+      "offpeak_price": 0.3879,
+      "peak_hours": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "id": "mid",
+      "label": "中峰价情景",
+      "p_s": 0.45,
+      "peak_price": 0.9562,
+      "offpeak_price": 0.3879,
+      "peak_hours": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "id": "high",
+      "label": "高峰价情景",
+      "p_s": 0.2,
+      "peak_price": 1.2865,
+      "offpeak_price": 0.3879,
+      "peak_hours": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    }
+  ],
+  "meta": {
+    "seed": 20250423,
+    "num_wells": 10,
+    "num_slots": 24,
+    "peak_hours": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ]
+  }
+}
