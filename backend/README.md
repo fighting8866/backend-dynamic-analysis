@@ -1,5 +1,7 @@
 # 抽油机井群随机多目标动态分析后端
 
+## 项目简介
+
 可直接交付联调的 FastAPI 后端，包含：
 
 - FastAPI 接口层
@@ -41,13 +43,18 @@ backend/
   README.md
 ```
 
-## 安装与启动
+## 安装依赖命令
 
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+```
+
+## 启动后端命令
+
+```powershell
 python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -56,7 +63,7 @@ python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/api/health`
 
-## 验证步骤
+## 本地测试方式
 
 ```powershell
 cd backend
@@ -72,6 +79,15 @@ python -m pytest tests\test_smoke.py -q
 - `/api/analysis/sensitivity`
 
 ## 接口说明
+
+### API 列表（总览）
+
+- `GET /api/health`
+- `GET /api/sample-data`
+- `POST /api/analysis/run`
+- `POST /api/analysis/sensitivity`
+- `GET /api/history`
+- `DELETE /api/history/{record_id}`
 
 ### 1. GET `/api/health`
 

@@ -1,0 +1,49 @@
+@baseUrl = http://127.0.0.1:8000
+
+### 1) 健康检查
+GET {{baseUrl}}/api/health
+Accept: application/json
+
+###
+
+### 2) 获取样例数据（用于后续请求体拼装）
+GET {{baseUrl}}/api/sample-data
+Accept: application/json
+
+###
+
+### 3) 运行完整分析（将 wells/scenarios/gamma_t 替换为 /api/sample-data 返回值）
+POST {{baseUrl}}/api/analysis/run
+Content-Type: application/json
+Accept: application/json
+
+{
+  "wells": [],
+  "scenarios": [],
+  "gamma_t": [],
+  "weights": {
+    "w_energy": 0.34,
+    "w_carbon": 0.33,
+    "w_economic": 0.33
+  },
+  "Q_min": 0,
+  "optional_constraints": null,
+  "baseline_compare": "both"
+}
+
+###
+
+### 4) 运行敏感性分析（weight_sets 为 null 时使用后端内置四模板）
+POST {{baseUrl}}/api/analysis/sensitivity
+Content-Type: application/json
+Accept: application/json
+
+{
+  "wells": [],
+  "scenarios": [],
+  "gamma_t": [],
+  "Q_min": 0,
+  "optional_constraints": null,
+  "weight_sets": null
+}
+
