@@ -1,0 +1,1171 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "抽油机井群随机多目标动态分析后端",
+    "description": "V1.1：OR-Tools + PuLP 兜底 + 三目标加权和（标准化）+ 情景电价 + 规则解释器",
+    "version": "1.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sample-data": {
+      "get": {
+        "tags": [
+          "sample-data"
+        ],
+        "summary": "Get Sample Data",
+        "operationId": "get_sample_data_api_sample_data_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analysis/run": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Run Analysis",
+        "operationId": "run_analysis_api_analysis_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analysis/sensitivity": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Run Sensitivity",
+        "operationId": "run_sensitivity_api_analysis_sensitivity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensitivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Get History",
+        "operationId": "get_history_api_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{record_id}": {
+      "delete": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Remove History",
+        "operationId": "remove_history_api_history__record_id__delete",
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Record Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisRunRequest": {
+        "properties": {
+          "wells": {
+            "items": {
+              "$ref": "#/components/schemas/WellInput"
+            },
+            "type": "array",
+            "title": "Wells"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "gamma_t": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamma T",
+            "description": "24 时段碳排因子；缺省则读取样例值"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/ObjectiveWeights"
+          },
+          "Q_min": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Q Min",
+            "description": "24h 最低总产量约束"
+          },
+          "optional_constraints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OptionalConstraints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_compare": {
+            "type": "string",
+            "enum": [
+              "full_run",
+              "simple_rule",
+              "both"
+            ],
+            "title": "Baseline Compare",
+            "default": "both"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wells",
+          "scenarios",
+          "weights",
+          "Q_min"
+        ],
+        "title": "AnalysisRunRequest"
+      },
+      "AnalysisRunResponse": {
+        "properties": {
+          "input_summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Summary"
+          },
+          "optimized_result": {
+            "$ref": "#/components/schemas/MetricSummary"
+          },
+          "baseline_results": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummary"
+            },
+            "type": "object",
+            "title": "Baseline Results"
+          },
+          "comparison_summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComparisonBlock"
+            },
+            "type": "object",
+            "title": "Comparison Summary"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/ExplanationResponse"
+          },
+          "charts_payload": {
+            "$ref": "#/components/schemas/ChartsPayloadResponse"
+          },
+          "saved_record_id": {
+            "type": "string",
+            "title": "Saved Record Id"
+          },
+          "sensitivity_preview": {
+            "$ref": "#/components/schemas/SensitivityResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_summary",
+          "optimized_result",
+          "baseline_results",
+          "comparison_summary",
+          "explanation",
+          "charts_payload",
+          "saved_record_id",
+          "sensitivity_preview"
+        ],
+        "title": "AnalysisRunResponse"
+      },
+      "ChartsPayloadResponse": {
+        "properties": {
+          "heatmap": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Heatmap"
+          },
+          "hourly_load": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Hourly Load"
+          },
+          "baseline_vs_optimized": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Baseline Vs Optimized"
+          },
+          "sensitivity_line": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Sensitivity Line"
+          },
+          "summary_cards": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Summary Cards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "heatmap",
+          "hourly_load",
+          "baseline_vs_optimized",
+          "sensitivity_line",
+          "summary_cards"
+        ],
+        "title": "ChartsPayloadResponse"
+      },
+      "ComparisonBlock": {
+        "properties": {
+          "energy_saving_rate": {
+            "type": "number",
+            "title": "Energy Saving Rate"
+          },
+          "carbon_reduction_rate": {
+            "type": "number",
+            "title": "Carbon Reduction Rate"
+          },
+          "economic_improvement_rate": {
+            "type": "number",
+            "title": "Economic Improvement Rate"
+          },
+          "production_change_rate": {
+            "type": "number",
+            "title": "Production Change Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "energy_saving_rate",
+          "carbon_reduction_rate",
+          "economic_improvement_rate",
+          "production_change_rate"
+        ],
+        "title": "ComparisonBlock"
+      },
+      "ExplanationResponse": {
+        "properties": {
+          "dominant_objective": {
+            "type": "string",
+            "title": "Dominant Objective"
+          },
+          "wells_suggested_avoid_peak": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wells Suggested Avoid Peak"
+          },
+          "wells_better_continuous": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wells Better Continuous"
+          },
+          "wells_start_stop_limited": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wells Start Stop Limited"
+          },
+          "largest_benefit_vs_full_run": {
+            "type": "string",
+            "title": "Largest Benefit Vs Full Run"
+          },
+          "rule_hits": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rule Hits"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Paragraphs"
+          },
+          "management_briefing": {
+            "type": "string",
+            "title": "Management Briefing"
+          },
+          "summary_one_line": {
+            "type": "string",
+            "title": "Summary One Line"
+          },
+          "sensitivity_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensitivity Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dominant_objective",
+          "wells_suggested_avoid_peak",
+          "wells_better_continuous",
+          "wells_start_stop_limited",
+          "largest_benefit_vs_full_run",
+          "rule_hits",
+          "paragraphs",
+          "management_briefing",
+          "summary_one_line"
+        ],
+        "title": "ExplanationResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version"
+        ],
+        "title": "HealthResponse"
+      },
+      "HistoryDeleteResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "id"
+        ],
+        "title": "HistoryDeleteResponse"
+      },
+      "HistoryListResponse": {
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryRecordSummary"
+            },
+            "type": "array",
+            "title": "Records"
+          }
+        },
+        "type": "object",
+        "required": [
+          "records"
+        ],
+        "title": "HistoryListResponse"
+      },
+      "HistoryRecordSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "input_summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Summary"
+          },
+          "objective_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Objective Weights"
+          },
+          "optimized_core_metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Optimized Core Metrics"
+          },
+          "explanation_summary": {
+            "type": "string",
+            "title": "Explanation Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "input_summary",
+          "objective_weights",
+          "optimized_core_metrics",
+          "explanation_summary"
+        ],
+        "title": "HistoryRecordSummary"
+      },
+      "MetricSummary": {
+        "properties": {
+          "feasible": {
+            "type": "boolean",
+            "title": "Feasible"
+          },
+          "infeasible_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Infeasible Reason"
+          },
+          "total_energy": {
+            "type": "number",
+            "title": "Total Energy"
+          },
+          "total_carbon": {
+            "type": "number",
+            "title": "Total Carbon"
+          },
+          "expected_economic_cost": {
+            "type": "number",
+            "title": "Expected Economic Cost"
+          },
+          "objective_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective Score"
+          },
+          "total_production": {
+            "type": "number",
+            "title": "Total Production"
+          },
+          "hourly_load": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Hourly Load"
+          },
+          "schedule_matrix": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Schedule Matrix"
+          },
+          "startup_matrix": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Startup Matrix"
+          },
+          "normalized_terms": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Normalized Terms"
+          },
+          "solver_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solver Status"
+          },
+          "solver_engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solver Engine"
+          },
+          "objective_value_scaled": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective Value Scaled"
+          },
+          "diagnostics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diagnostics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feasible",
+          "total_energy",
+          "total_carbon",
+          "expected_economic_cost",
+          "total_production",
+          "hourly_load"
+        ],
+        "title": "MetricSummary"
+      },
+      "ObjectiveWeights": {
+        "properties": {
+          "w_energy": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "W Energy",
+            "description": "能耗目标权重"
+          },
+          "w_carbon": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "W Carbon",
+            "description": "碳排目标权重"
+          },
+          "w_economic": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "W Economic",
+            "description": "期望经济成本权重"
+          }
+        },
+        "type": "object",
+        "required": [
+          "w_energy",
+          "w_carbon",
+          "w_economic"
+        ],
+        "title": "ObjectiveWeights"
+      },
+      "OptionalConstraints": {
+        "properties": {
+          "hourly_load_cap": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourly Load Cap",
+            "description": "长度 24 的分时负荷上限；为空则不启用"
+          }
+        },
+        "type": "object",
+        "title": "OptionalConstraints"
+      },
+      "SampleDataResponse": {
+        "properties": {
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta"
+          },
+          "wells": {
+            "items": {
+              "$ref": "#/components/schemas/WellInput"
+            },
+            "type": "array",
+            "title": "Wells"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "gamma_t": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Gamma T"
+          },
+          "recommended_weights": {
+            "$ref": "#/components/schemas/ObjectiveWeights"
+          },
+          "recommended_Q_min": {
+            "type": "number",
+            "title": "Recommended Q Min"
+          },
+          "request_template": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request Template"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meta",
+          "wells",
+          "scenarios",
+          "gamma_t",
+          "recommended_weights",
+          "recommended_Q_min",
+          "request_template"
+        ],
+        "title": "SampleDataResponse"
+      },
+      "ScenarioInput": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "p_s": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "P S"
+          },
+          "peak_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Peak Price"
+          },
+          "offpeak_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Offpeak Price"
+          },
+          "peak_hours": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Peak Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "p_s",
+          "peak_price",
+          "offpeak_price"
+        ],
+        "title": "ScenarioInput"
+      },
+      "SensitivityCaseResponse": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Weights"
+          },
+          "feasible": {
+            "type": "boolean",
+            "title": "Feasible"
+          },
+          "infeasible_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Infeasible Reason"
+          },
+          "total_energy": {
+            "type": "number",
+            "title": "Total Energy"
+          },
+          "total_carbon": {
+            "type": "number",
+            "title": "Total Carbon"
+          },
+          "expected_economic_cost": {
+            "type": "number",
+            "title": "Expected Economic Cost"
+          },
+          "objective_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective Score"
+          },
+          "total_production": {
+            "type": "number",
+            "title": "Total Production"
+          },
+          "solver_engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solver Engine"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "weights",
+          "feasible",
+          "total_energy",
+          "total_carbon",
+          "expected_economic_cost",
+          "total_production"
+        ],
+        "title": "SensitivityCaseResponse"
+      },
+      "SensitivityRequest": {
+        "properties": {
+          "wells": {
+            "items": {
+              "$ref": "#/components/schemas/WellInput"
+            },
+            "type": "array",
+            "title": "Wells"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "gamma_t": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamma T",
+            "description": "24 时段碳排因子；缺省则读取样例值"
+          },
+          "Q_min": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Q Min"
+          },
+          "optional_constraints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OptionalConstraints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weight_sets": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ObjectiveWeights"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Sets",
+            "description": "自定义权重组合"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wells",
+          "scenarios",
+          "Q_min"
+        ],
+        "title": "SensitivityRequest"
+      },
+      "SensitivityResponse": {
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/SensitivityCaseResponse"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "templates_meta": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Templates Meta"
+          },
+          "best_case_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Case Label"
+          },
+          "feasible_case_count": {
+            "type": "integer",
+            "title": "Feasible Case Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cases",
+          "feasible_case_count"
+        ],
+        "title": "SensitivityResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WellInput": {
+        "properties": {
+          "well_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Well Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "q_it": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Q It"
+          },
+          "e_it": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "E It"
+          },
+          "c_start_i": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "C Start I"
+          },
+          "H_min_i": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "H Min I"
+          },
+          "H_max_i": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "H Max I"
+          },
+          "N_max_i": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "N Max I"
+          }
+        },
+        "type": "object",
+        "required": [
+          "well_id",
+          "q_it",
+          "e_it",
+          "c_start_i",
+          "H_min_i",
+          "H_max_i",
+          "N_max_i"
+        ],
+        "title": "WellInput"
+      }
+    }
+  }
+}

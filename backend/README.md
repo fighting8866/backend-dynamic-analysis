@@ -71,6 +71,14 @@ cd backend
 python -m pytest tests\test_smoke.py -q
 ```
 
+或使用最小联调脚本（需先启动服务）：
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python smoke_test.py --base-url http://127.0.0.1:8000
+```
+
 该测试脚本会验证：
 
 - `/api/health`

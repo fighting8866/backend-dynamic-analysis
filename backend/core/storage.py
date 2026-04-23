@@ -19,7 +19,17 @@ def _utc_now_iso() -> str:
 def _read_all(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"records": []}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        # 历史文件损坏时兜底，避免 history 接口直接 500
+        return {"records": []}
+    if not isinstance(obj, dict):
+        return {"records": []}
+    records = obj.get("records", [])
+    if not isinstance(records, list):
+        return {"records": []}
+    return {"records": records}
 
 
 def _write_all(path: Path, data: dict[str, Any]) -> None:
