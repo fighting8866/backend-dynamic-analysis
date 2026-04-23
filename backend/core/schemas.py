@@ -225,8 +225,7 @@ class ChartsPayloadResponse(BaseModel):
     heatmap: dict[str, Any]
     hourly_load: dict[str, Any]
     baseline_vs_optimized: dict[str, Any]
-    sensitivity_line: dict[str, Any]
-    summary_cards: list[dict[str, Any]]
+    sensitivity: dict[str, Any]
 
 
 class SensitivityCaseResponse(BaseModel):
@@ -247,6 +246,7 @@ class SensitivityResponse(BaseModel):
     templates_meta: list[dict[str, Any]] | None = None
     best_case_label: str | None = None
     feasible_case_count: int
+    charts_payload: dict[str, Any] | None = None
 
 
 class AnalysisRunResponse(BaseModel):

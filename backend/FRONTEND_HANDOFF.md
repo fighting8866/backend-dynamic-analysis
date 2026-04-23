@@ -279,7 +279,7 @@ DELETE /api/history/550e8400-e29b-41d4-a716-446655440000
 
 ---
 
-## 7. `charts_payload` 字段说明
+## 7. `charts_payload` 字段说明（ECharts 直接可用）
 
 `POST /api/analysis/run` 返回的 `charts_payload` 专为可视化准备。
 
@@ -287,41 +287,32 @@ DELETE /api/history/550e8400-e29b-41d4-a716-446655440000
 
 | 字段 | 说明 |
 |------|------|
-| `x_labels` | 井 id 列表，与 `wells` 顺序一致 |
-| `y_labels` | 时段标签，如 `"0:00"` … `"23:00"` |
-| `values` | 与 `optimized_result.schedule_matrix` 相同的二维 0/1 |
-| `value_label` | 图例说明文案 |
+| `x_axis` | 井 id 列表，与 `wells` 顺序一致 |
+| `y_axis` | 时段标签，如 `"0:00"` … `"23:00"` |
+| `series` | 热力图点位数组，元素格式 `[wellIndex, hourIndex, value]` |
 
 ### 7.2 `hourly_load`
 
 | 字段 | 说明 |
 |------|------|
-| `hours` | `0`–`23` |
-| `optimized` | 优化方案 24 点总负荷 |
-| `baseline_full_run` | 全时运行 24 点总负荷 |
-| `baseline_simple_rule` | 固定错峰 24 点总负荷 |
+| `categories` | `0:00..23:00` |
+| `series` | 折线序列数组，包含优化/全时运行/固定错峰 |
 
 ### 7.3 `baseline_vs_optimized`
 
 | 字段 | 说明 |
 |------|------|
 | `categories` | 固定三项：`总能耗`、`总碳排`、`期望经济成本` |
-| `series` | 多条 `{ "name", "values" }`，含「优化方案」「全时运行」「固定错峰」 |
+| `series` | 多条 `{ "name", "type", "data" }`，含「优化方案」「全时运行」「固定错峰」 |
 
 `values` 与 `categories` 顺序一一对应。
 
-### 7.4 `sensitivity_line`
+### 7.4 `sensitivity`
 
 | 字段 | 说明 |
 |------|------|
-| `labels` | 各敏感性方案名称（与 `sensitivity_preview.cases` 对齐） |
-| `series.total_energy` | 每组总能耗 |
-| `series.total_carbon` | 每组总碳排 |
-| `series.expected_economic_cost` | 每组期望成本 |
-
-### 7.5 `summary_cards`
-
-便于做 KPI 卡片：每项含 `key`、`label`、`value`、`unit`（如优化总能耗/碳排/期望成本/总产量）。**单位字符串为展示用**，与业务真实单位约定以后端/业务文档为准。
+| `categories` | 各敏感性方案名称（与 `sensitivity_preview.cases` 对齐） |
+| `series` | 多折线序列（总能耗、总碳排、期望经济成本） |
 
 ---
 

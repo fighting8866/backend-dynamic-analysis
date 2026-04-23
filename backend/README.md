@@ -281,39 +281,25 @@ python smoke_test.py --base-url http://127.0.0.1:8000
 
 #### `heatmap`
 
-- `x_labels`: 井 ID 列表
-- `y_labels`: `0:00` 到 `23:00`
-- `values`: `schedule_matrix`
-- `value_label`: `"运行(1)/停机(0)"`
+- `x_axis`: 井 ID 列表
+- `y_axis`: `0:00` 到 `23:00`
+- `series`: 热力点数组，元素为 `[wellIndex, hourIndex, value]`
 
 #### `hourly_load`
 
-- `hours`: `0..23`
-- `optimized`: 优化方案 24 点总负荷
-- `baseline_full_run`: 全时运行基线负荷
-- `baseline_simple_rule`: 固定错峰基线负荷
+- `categories`: `0:00..23:00`
+- `series`: 折线序列数组（优化/全时运行/固定错峰）
 
 #### `baseline_vs_optimized`
 
 - `categories`: `["总能耗", "总碳排", "期望经济成本"]`
 - `series[*].name`: 方案名称
-- `series[*].values`: 三指标数组
+- `series[*].data`: 三指标数组（柱状图）
 
-#### `sensitivity_line`
+#### `sensitivity`
 
-- `labels`: 敏感性方案名称
-- `series.total_energy`
-- `series.total_carbon`
-- `series.expected_economic_cost`
-
-#### `summary_cards`
-
-可直接做顶部卡片：
-
-- `optimized_energy`
-- `optimized_carbon`
-- `optimized_cost`
-- `optimized_production`
+- `categories`: 敏感性方案名称
+- `series`: 多折线序列（总能耗/总碳排/期望经济成本）
 
 ## 求解逻辑说明
 

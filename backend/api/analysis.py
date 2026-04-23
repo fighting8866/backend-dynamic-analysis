@@ -46,19 +46,25 @@ def build_charts_payload(
     b_rule: dict[str, Any],
     sens: dict[str, Any],
 ) -> dict[str, Any]:
-    well_ids = [w["well_id"] for w in wells]
-    hours = list(range(24))
-    heatmap = {
-        "x_labels": well_ids,
-        "y_labels": [f"{h}:00" for h in hours],
-        "values": optimized.get("schedule_matrix") or [],
-        "value_label": "运行(1)/停机(0)",
-    }
+    well_ids = [str(w.get("well_id", "")) for w in wells]
+    hours = [f"{h}:00" for h in range(24)]
+    sched = optimized.get("schedule_matrix") or []
+    heatmap_series: list[list[int]] = []
+    for x_idx, row in enumerate(sched):
+        for y_idx, v in enumerate(row):
+            heatmap_series.append([x_idx, y_idx, int(v)])
+    heatmap = {"x_axis": well_ids, "y_axis": hours, "series": heatmap_series}
+
+    opt_load = optimized.get("hourly_load") or []
+    full_load = b_full.get("hourly_load") or []
+    rule_load = b_rule.get("hourly_load") or []
     hourly_load = {
-        "hours": hours,
-        "optimized": optimized.get("hourly_load") or [],
-        "baseline_full_run": b_full.get("hourly_load") or [],
-        "baseline_simple_rule": b_rule.get("hourly_load") or [],
+        "categories": hours,
+        "series": [
+            {"name": "优化方案", "type": "line", "data": [float(v) for v in opt_load]},
+            {"name": "全时运行", "type": "line", "data": [float(v) for v in full_load]},
+            {"name": "固定错峰", "type": "line", "data": [float(v) for v in rule_load]},
+        ],
     }
     cats = ["总能耗", "总碳排", "期望经济成本"]
     baseline_vs_optimized = {
@@ -66,7 +72,8 @@ def build_charts_payload(
         "series": [
             {
                 "name": "优化方案",
-                "values": [
+                "type": "bar",
+                "data": [
                     float(optimized.get("total_energy") or 0),
                     float(optimized.get("total_carbon") or 0),
                     float(optimized.get("expected_economic_cost") or 0),
@@ -74,7 +81,8 @@ def build_charts_payload(
             },
             {
                 "name": "全时运行",
-                "values": [
+                "type": "bar",
+                "data": [
                     float(b_full.get("total_energy") or 0),
                     float(b_full.get("total_carbon") or 0),
                     float(b_full.get("expected_economic_cost") or 0),
@@ -82,7 +90,8 @@ def build_charts_payload(
             },
             {
                 "name": "固定错峰",
-                "values": [
+                "type": "bar",
+                "data": [
                     float(b_rule.get("total_energy") or 0),
                     float(b_rule.get("total_carbon") or 0),
                     float(b_rule.get("expected_economic_cost") or 0),
@@ -91,26 +100,32 @@ def build_charts_payload(
         ],
     }
     cases = sens.get("cases") or []
-    sensitivity_line = {
-        "labels": [c.get("label") for c in cases],
-        "series": {
-            "total_energy": [float(c.get("total_energy") or 0) for c in cases],
-            "total_carbon": [float(c.get("total_carbon") or 0) for c in cases],
-            "expected_economic_cost": [float(c.get("expected_economic_cost") or 0) for c in cases],
-        },
+    sensitivity_data = {
+        "categories": [str(c.get("label", "")) for c in cases],
+        "series": [
+            {"name": "总能耗", "type": "line", "data": [float(c.get("total_energy") or 0) for c in cases]},
+            {"name": "总碳排", "type": "line", "data": [float(c.get("total_carbon") or 0) for c in cases]},
+            {
+                "name": "期望经济成本",
+                "type": "line",
+                "data": [float(c.get("expected_economic_cost") or 0) for c in cases],
+            },
+        ],
     }
-    summary_cards = [
-        {"key": "optimized_energy", "label": "优化总能耗", "value": float(optimized.get("total_energy") or 0), "unit": "kWh"},
-        {"key": "optimized_carbon", "label": "优化总碳排", "value": float(optimized.get("total_carbon") or 0), "unit": "tCO2e-eq"},
-        {"key": "optimized_cost", "label": "优化期望成本", "value": float(optimized.get("expected_economic_cost") or 0), "unit": "cost"},
-        {"key": "optimized_production", "label": "优化总产量", "value": float(optimized.get("total_production") or 0), "unit": "m3"},
-    ]
     return {
         "heatmap": heatmap,
         "hourly_load": hourly_load,
         "baseline_vs_optimized": baseline_vs_optimized,
-        "sensitivity_line": sensitivity_line,
-        "summary_cards": summary_cards,
+        "sensitivity": sensitivity_data,
+    }
+
+
+def empty_charts_payload() -> dict[str, Any]:
+    return {
+        "heatmap": {"x_axis": [], "y_axis": [], "series": []},
+        "hourly_load": {"categories": [], "series": []},
+        "baseline_vs_optimized": {"categories": [], "series": []},
+        "sensitivity": {"categories": [], "series": []},
     }
 
 
@@ -177,6 +192,8 @@ def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
         }
 
     charts_payload = build_charts_payload(wells, opt, b_full, b_rule, sens)
+    if not isinstance(charts_payload, dict):
+        charts_payload = empty_charts_payload()
 
     input_summary = {
         "num_wells": len(wells),
@@ -222,4 +239,23 @@ def run_sensitivity(req: SensitivityRequest) -> dict[str, Any]:
     ensure_demo_files(_data_dir())
     wells, scenarios, gamma_t = _bundle_dicts(req)
     cap = req.optional_constraints.hourly_load_cap if req.optional_constraints else None
-    return sensitivity.sensitivity_analysis(wells, scenarios, list(gamma_t), req.Q_min, req.weight_sets, cap)
+    sens = sensitivity.sensitivity_analysis(wells, scenarios, list(gamma_t), req.Q_min, req.weight_sets, cap)
+    cases = sens.get("cases") or []
+    sens["charts_payload"] = {
+        "heatmap": {"x_axis": [], "y_axis": [], "series": []},
+        "hourly_load": {"categories": [], "series": []},
+        "baseline_vs_optimized": {"categories": [], "series": []},
+        "sensitivity": {
+            "categories": [str(c.get("label", "")) for c in cases],
+            "series": [
+                {"name": "总能耗", "type": "line", "data": [float(c.get("total_energy") or 0) for c in cases]},
+                {"name": "总碳排", "type": "line", "data": [float(c.get("total_carbon") or 0) for c in cases]},
+                {
+                    "name": "期望经济成本",
+                    "type": "line",
+                    "data": [float(c.get("expected_economic_cost") or 0) for c in cases],
+                },
+            ],
+        },
+    }
+    return sens
