@@ -120,12 +120,14 @@ python smoke_test.py --base-url http://127.0.0.1:8000
 - `recommended_weights`
 - `recommended_Q_min`
 - `request_template`
+- `run_request_example`
 
 其中：
 
 - `wells[i].q_it`、`wells[i].e_it` 长度固定为 24
 - `scenarios[*].p_s` 概率和约等于 1
 - `request_template` 可直接拼装为分析请求
+- `run_request_example` 可直接 POST 到 `/api/analysis/run`
 
 ### 3. POST `/api/analysis/run`
 
@@ -151,11 +153,58 @@ python smoke_test.py --base-url http://127.0.0.1:8000
 }
 ```
 
+标准格式（推荐）：
+
+```json
+{
+  "wells": [
+    {
+      "well_id": "W01",
+      "q_it": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+      "e_it": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+      "c_start_i": 30,
+      "H_min_i": 6,
+      "H_max_i": 24,
+      "N_max_i": 2
+    }
+  ],
+  "scenarios": [{ "id": "s1", "p_s": 1, "peak_price": 0.9, "offpeak_price": 0.4, "peak_hours": [9, 10, 11] }],
+  "gamma_t": [0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42],
+  "weights": { "w_energy": 0.4, "w_carbon": 0.3, "w_economic": 0.3 },
+  "Q_min": 3.0
+}
+```
+
+兼容简化格式（后端会自动标准化）：
+
+```json
+{
+  "wells": [
+    {
+      "well_id": "W01",
+      "q_it": 0.3,
+      "power_consumption": 8,
+      "c_start_i": 30,
+      "H_min_i": 6,
+      "H_max_i": 24,
+      "N_max_i": 2
+    }
+  ],
+  "scenarios": [{ "id": "s1", "p_s": 1, "peak_price": 0.9, "offpeak_price": 0.4, "peak_hours": [9, 10, 11] }]
+}
+```
+
 说明：
 
 - `gamma_t` 可不传，不传时自动读取 demo 值
 - `hourly_load_cap` 可不传
 - `baseline_compare` 支持 `full_run`、`simple_rule`、`both`
+- 标准格式中 `wells[*].q_it` 为长度 24 的数组；若误传单个数字会自动扩展
+- 标准格式中 `wells[*].e_it` 为长度 24 的数组；若误传单个数字会自动扩展
+- 若未传 `e_it` 但传了 `power_consumption`，后端会自动生成默认 `e_it`
+- 若缺少 `weights`，默认使用 `0.4/0.3/0.3`（energy/carbon/economic）
+- 若缺少 `Q_min`，默认按理论总产量的 62% 自动估算
+- 若缺少 `gamma_t`，默认补样例/默认 24 时段碳排因子
 
 返回字段：
 

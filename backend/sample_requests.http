@@ -33,6 +33,81 @@ Accept: application/json
 
 ###
 
+### 3.1) 最小可运行示例（不依赖 sample-data，1口井x24时段）
+POST {{baseUrl}}/api/analysis/run
+Content-Type: application/json
+Accept: application/json
+
+{
+  "wells": [
+    {
+      "well_id": "W-DEMO-01",
+      "name": "演示井1",
+      "q_it": 0.3,
+      "power_consumption": 8.0,
+      "c_start_i": 30,
+      "H_min_i": 6,
+      "H_max_i": 24,
+      "N_max_i": 2
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "single",
+      "label": "单情景",
+      "p_s": 1.0,
+      "peak_price": 0.9,
+      "offpeak_price": 0.4,
+      "peak_hours": [9, 10, 11, 12, 13, 14, 15]
+    }
+  ],
+  "gamma_t": [
+    0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40,
+    0.42, 0.43, 0.44, 0.45, 0.45, 0.44, 0.43, 0.42,
+    0.41, 0.40, 0.39, 0.39, 0.39, 0.39, 0.40, 0.40
+  ],
+  "weights": {
+    "w_energy": 0.34,
+    "w_carbon": 0.33,
+    "w_economic": 0.33
+  },
+  "Q_min": 3.0,
+  "optional_constraints": null,
+  "baseline_compare": "both"
+}
+
+###
+
+### 3.2) 兼容简化格式（q_it/e_it 标量；缺 weights/Q_min/gamma_t 也可）
+POST {{baseUrl}}/api/analysis/run
+Content-Type: application/json
+Accept: application/json
+
+{
+  "wells": [
+    {
+      "well_id": "W-SIMPLE-01",
+      "q_it": 0.3,
+      "e_it": 8,
+      "c_start_i": 20,
+      "H_min_i": 6,
+      "H_max_i": 24,
+      "N_max_i": 2
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "single",
+      "p_s": 1.0,
+      "peak_price": 0.9,
+      "offpeak_price": 0.4,
+      "peak_hours": [9, 10, 11, 12]
+    }
+  ]
+}
+
+###
+
 ### 4) 运行敏感性分析（weight_sets 为 null 时使用后端内置四模板）
 POST {{baseUrl}}/api/analysis/sensitivity
 Content-Type: application/json

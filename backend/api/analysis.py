@@ -13,6 +13,8 @@ from core.storage import append_history
 from core.utils import rate_improvement
 
 router = APIRouter(tags=["analysis"])
+DEFAULT_WEIGHTS = {"w_energy": 0.4, "w_carbon": 0.3, "w_economic": 0.3}
+DEFAULT_GAMMA = [0.42] * 24
 
 
 def _data_dir() -> Path:
@@ -141,10 +143,55 @@ def _bundle_dicts(req: AnalysisRunRequest | SensitivityRequest) -> tuple[list[di
     return wells, scenarios, gamma_t
 
 
+def _normalize_before_optimize(
+    req: AnalysisRunRequest,
+    wells: list[dict[str, Any]],
+    gamma_t_raw: list[float],
+) -> tuple[dict[str, float], float, list[float], list[str]]:
+    notes: list[str] = []
+
+    # 说明标量自动扩展（WellInput 的 pre-validator 已完成真正转换）
+    for idx, w in enumerate(req.wells):
+        q_in = w.model_extra.get("q_it") if w.model_extra else None
+        e_in = w.model_extra.get("e_it") if w.model_extra else None
+        p_in = w.model_extra.get("power_consumption") if w.model_extra else None
+        if isinstance(q_in, (int, float, str)):
+            notes.append(f"wells[{idx}].q_it 应为长度24数组，已检测到标量输入并自动扩展。")
+        if isinstance(e_in, (int, float, str)):
+            notes.append(f"wells[{idx}].e_it 应为长度24数组，已检测到标量输入并自动扩展。")
+        if ("e_it" not in (w.model_extra or {})) and p_in is not None:
+            notes.append(f"wells[{idx}] 未提供有效 e_it，已使用 power_consumption 生成默认24时段 e_it。")
+
+    if req.weights is None:
+        notes.append("缺少 weights，已使用默认权重 w_energy/w_carbon/w_economic = 0.4/0.3/0.3。")
+        weights = dict(DEFAULT_WEIGHTS)
+    else:
+        weights = {
+            "w_energy": float(req.weights.w_energy),
+            "w_carbon": float(req.weights.w_carbon),
+            "w_economic": float(req.weights.w_economic),
+        }
+
+    if req.Q_min is None:
+        total_theoretical = sum(float(w["q_it"][t]) for w in wells for t in range(24))
+        q_min = round(total_theoretical * 0.62, 6)
+        notes.append(f"缺少 Q_min，已按理论总产量的 62% 自动估算为 {q_min}。")
+    else:
+        q_min = float(req.Q_min)
+
+    gamma_t = gamma_t_raw
+    if not gamma_t or len(gamma_t) != 24:
+        gamma_t = list(DEFAULT_GAMMA)
+        notes.append("缺少 gamma_t 或长度异常，已使用默认 24 时段碳排因子。")
+
+    return weights, q_min, gamma_t, notes
+
+
 @router.post("/api/analysis/run", response_model=AnalysisRunResponse)
 def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
     ensure_demo_files(_data_dir())
     wells, scenarios, gamma_t = _bundle_dicts(req)
+    weights, q_min, gamma_t, norm_notes = _normalize_before_optimize(req, wells, gamma_t)
 
     cap = req.optional_constraints.hourly_load_cap if req.optional_constraints else None
 
@@ -152,10 +199,10 @@ def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
         wells=wells,
         scenarios=scenarios,
         gamma_t=list(gamma_t),
-        w_energy=req.weights.w_energy,
-        w_carbon=req.weights.w_carbon,
-        w_economic=req.weights.w_economic,
-        Q_min=req.Q_min,
+        w_energy=weights["w_energy"],
+        w_carbon=weights["w_carbon"],
+        w_economic=weights["w_economic"],
+        Q_min=q_min,
         hourly_load_cap=cap,
     )
     opt = optimize_schedule(payload)
@@ -169,13 +216,9 @@ def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
     else:
         baseline_results = {"baseline_full_run": b_full, "baseline_simple_rule": b_rule}
 
-    sens = sensitivity.sensitivity_analysis(wells, scenarios, list(gamma_t), req.Q_min, None, cap)
+    sens = sensitivity.sensitivity_analysis(wells, scenarios, list(gamma_t), q_min, None, cap)
 
-    wdict = {
-        "w_energy": float(req.weights.w_energy),
-        "w_carbon": float(req.weights.w_carbon),
-        "w_economic": float(req.weights.w_economic),
-    }
+    wdict = dict(weights)
     ssum = sum(wdict.values()) or 1.0
     wnorm = {k: round(v / ssum, 6) for k, v in wdict.items()}
 
@@ -198,11 +241,12 @@ def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
     input_summary = {
         "num_wells": len(wells),
         "num_slots": len(wells[0]["q_it"]) if wells else 0,
-        "Q_min": req.Q_min,
+        "Q_min": q_min,
         "weights_raw": wdict,
         "weights_normalized": wnorm,
         "optional_constraints": req.optional_constraints.model_dump() if req.optional_constraints else None,
         "scenario_probability_sum": round(sum(float(s["p_s"]) for s in scenarios), 6),
+        "normalization_notes": norm_notes,
     }
 
     core_metrics = {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 
 NUM_SLOTS = 24
@@ -32,6 +32,58 @@ class WellInput(BaseModel):
     H_min_i: int = Field(ge=0, le=NUM_SLOTS)
     H_max_i: int = Field(ge=0, le=NUM_SLOTS)
     N_max_i: int = Field(ge=0, le=NUM_SLOTS)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_series_input(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        def _expand_to_24(v: Any) -> Any:
+            if isinstance(v, (int, float)):
+                return [float(v)] * NUM_SLOTS
+            if isinstance(v, str):
+                try:
+                    fv = float(v)
+                    return [fv] * NUM_SLOTS
+                except ValueError:
+                    return v
+            if isinstance(v, list):
+                return v
+            return v
+
+        # 兼容：q_it 允许单数字，自动扩成 24 时段
+        if "q_it" in data:
+            data["q_it"] = _expand_to_24(data.get("q_it"))
+
+        # 兼容：e_it 允许单数字；或缺失/无效时用 power_consumption 兜底
+        if "e_it" in data:
+            expanded = _expand_to_24(data.get("e_it"))
+            if isinstance(expanded, list):
+                data["e_it"] = expanded
+            elif "power_consumption" in data:
+                data["e_it"] = _expand_to_24(data.get("power_consumption"))
+            else:
+                data["e_it"] = expanded
+        elif "power_consumption" in data:
+            data["e_it"] = _expand_to_24(data.get("power_consumption"))
+
+        return data
+
+    @field_validator("q_it", "e_it", mode="before")
+    @classmethod
+    def coerce_series_or_raise(cls, value: Any, info: ValidationInfo) -> Any:
+        if isinstance(value, list):
+            return value
+        if isinstance(value, (int, float)):
+            return [float(value)] * NUM_SLOTS
+        if isinstance(value, str):
+            try:
+                fv = float(value)
+                return [fv] * NUM_SLOTS
+            except ValueError:
+                pass
+        raise ValueError(f"{info.field_name} 应为长度24数组，已检测到标量/非数组输入。")
 
     @field_validator("q_it", "e_it")
     @classmethod
@@ -100,8 +152,8 @@ class AnalysisRunRequest(BaseModel):
     wells: list[WellInput]
     scenarios: list[ScenarioInput]
     gamma_t: list[float] | None = Field(default=None, description="24 时段碳排因子；缺省则读取样例值")
-    weights: ObjectiveWeights
-    Q_min: float = Field(ge=0, description="24h 最低总产量约束")
+    weights: ObjectiveWeights | None = Field(default=None, description="目标权重；缺省时自动使用默认值")
+    Q_min: float | None = Field(default=None, ge=0, description="24h 最低总产量约束；缺省时自动估算")
     optional_constraints: OptionalConstraints | None = None
     baseline_compare: Literal["full_run", "simple_rule", "both"] = "both"
 
@@ -268,3 +320,4 @@ class SampleDataResponse(BaseModel):
     recommended_weights: ObjectiveWeights
     recommended_Q_min: float
     request_template: dict[str, Any]
+    run_request_example: dict[str, Any]

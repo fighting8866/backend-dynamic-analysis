@@ -116,6 +116,15 @@ def build_demo_bundle() -> dict[str, Any]:
     gamma_t = generate_gamma_t(rng)
     full_run_production = sum(float(w["q_it"][t]) for w in wells for t in range(NUM_SLOTS))
     recommended_q_min = round(full_run_production * 0.62, 4)
+    run_request_example = {
+        "wells": wells,
+        "scenarios": scenarios,
+        "gamma_t": gamma_t,
+        "weights": {"w_energy": 0.34, "w_carbon": 0.33, "w_economic": 0.33},
+        "Q_min": recommended_q_min,
+        "optional_constraints": None,
+        "baseline_compare": "both",
+    }
     return {
         "meta": {
             "seed": DEMO_SEED,
@@ -133,6 +142,7 @@ def build_demo_bundle() -> dict[str, Any]:
             "Q_min": recommended_q_min,
             "optional_constraints": None,
         },
+        "run_request_example": run_request_example,
     }
 
 
@@ -168,16 +178,26 @@ def load_bundle_from_disk(data_dir: Path) -> dict[str, Any]:
     scen_path = data_dir / "scenarios_demo.json"
     wells_obj = json.loads(wells_path.read_text(encoding="utf-8"))
     scen_obj = json.loads(scen_path.read_text(encoding="utf-8"))
+    qmin = round(sum(float(w["q_it"][t]) for w in wells_obj["wells"] for t in range(NUM_SLOTS)) * 0.62, 4)
     return {
         "meta": wells_obj.get("meta", {}),
         "wells": wells_obj["wells"],
         "scenarios": scen_obj["scenarios"],
         "gamma_t": wells_obj["gamma_t"],
         "recommended_weights": {"w_energy": 0.34, "w_carbon": 0.33, "w_economic": 0.33},
-        "recommended_Q_min": round(sum(float(w["q_it"][t]) for w in wells_obj["wells"] for t in range(NUM_SLOTS)) * 0.62, 4),
+        "recommended_Q_min": qmin,
         "request_template": {
             "weights": {"w_energy": 0.34, "w_carbon": 0.33, "w_economic": 0.33},
-            "Q_min": round(sum(float(w["q_it"][t]) for w in wells_obj["wells"] for t in range(NUM_SLOTS)) * 0.62, 4),
+            "Q_min": qmin,
             "optional_constraints": None,
+        },
+        "run_request_example": {
+            "wells": wells_obj["wells"],
+            "scenarios": scen_obj["scenarios"],
+            "gamma_t": wells_obj["gamma_t"],
+            "weights": {"w_energy": 0.34, "w_carbon": 0.33, "w_economic": 0.33},
+            "Q_min": qmin,
+            "optional_constraints": None,
+            "baseline_compare": "both",
         },
     }

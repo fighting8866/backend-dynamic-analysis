@@ -79,7 +79,7 @@ GET /api/sample-data
 
 **Content-Type:** `application/json`
 
-**推荐拼装方式：**先 `GET /api/sample-data`，将返回中的 `wells`、`scenarios`、`gamma_t` 与 `request_template` 合并为一次 `POST` 体（`request_template` 内含推荐 `weights`、`Q_min` 等）。
+**推荐拼装方式：**先 `GET /api/sample-data`，优先直接使用返回的 `run_request_example`；或将 `wells`、`scenarios`、`gamma_t` 与 `request_template` 合并为一次 `POST` 体。
 
 **最小可行示例结构：**
 
@@ -95,13 +95,43 @@ GET /api/sample-data
 }
 ```
 
+**兼容简化格式（后端自动标准化）：**
+
+```json
+{
+  "wells": [
+    {
+      "well_id": "W01",
+      "q_it": 0.3,
+      "power_consumption": 8,
+      "c_start_i": 30,
+      "H_min_i": 6,
+      "H_max_i": 24,
+      "N_max_i": 2
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "single",
+      "p_s": 1.0,
+      "peak_price": 0.9,
+      "offpeak_price": 0.4,
+      "peak_hours": [9, 10, 11]
+    }
+  ]
+}
+```
+
 说明：
 
 - `wells`：数组元素须符合 `WellInput`（见第 6 节）。
 - `scenarios`：须符合 `ScenarioInput`；**所有 `p_s` 之和与 1 的偏差 ≤ 0.001**。
-- `weights`：三项均 ≥ 0，且 **和 > 0**（服务端会再做归一化用于展示与解释）。
-- `Q_min`：24h 最低总产量；样例接口会返回 **`recommended_Q_min`**（约为全时产量的 62%），可直接使用以降低不可行概率。
+- `weights`：缺失时默认使用 `0.4/0.3/0.3`。
+- `Q_min`：缺失时自动按理论总产量 62% 估算（也可手动覆盖）。
 - `baseline_compare`：`"full_run"` | `"simple_rule"` | `"both"`，控制 `baseline_results` 里包含哪些基准（图表里仍会算全时/错峰曲线供对比，与该项无关）。
+- 标准格式中 `wells[*].q_it` / `e_it` 应是长度 24 数组；兼容单数字输入（自动扩展为 24 时段）。
+- 若未传 `e_it` 但传了 `power_consumption`，后端会自动生成默认 `e_it`。
+- 若缺少 `gamma_t`，后端会自动补 24 时段碳排因子。
 
 ---
 
@@ -162,6 +192,7 @@ DELETE /api/history/550e8400-e29b-41d4-a716-446655440000
 | `recommended_weights` | object | 推荐权重（三字段） |
 | `recommended_Q_min` | number | 推荐产量下限（便于一次跑通） |
 | `request_template` | object | 含 `weights`、`Q_min`、`optional_constraints`，可与 `wells`/`scenarios`/`gamma_t` 拼成 `POST /api/analysis/run` |
+| `run_request_example` | object | 可直接 POST 到 `/api/analysis/run` 的完整样例（含 wells/scenarios/gamma_t） |
 
 **单井 `wells[]` 主要字段：**
 
