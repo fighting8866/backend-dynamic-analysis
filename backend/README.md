@@ -79,6 +79,80 @@ cd backend
 python smoke_test.py --base-url http://127.0.0.1:8000
 ```
 
+## 前端联调说明
+
+前端文件位于 `frontend/index.html`，已完成前后端联调改造：
+
+### 启动前端
+
+直接用浏览器打开 `frontend/index.html` 即可，无需额外启动前端服务器。
+
+### 联调流程
+
+1. **启动后端**：
+   ```powershell
+   cd backend
+   python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+2. **打开前端**：
+   - 用浏览器直接打开 `frontend/index.html`
+   - 页面右上角会显示后端连接状态（绿色✅表示已连接）
+
+3. **测试接口**：
+   - 点击「基础单井优化」→ 输入参数 → 点击「开始计算」
+   - 点击「高级井群优化」→ 点击「启动井群优化」
+
+## GitHub 协作方式
+
+### 分支管理
+
+- `main`：主分支，用于发布稳定版本
+- `develop`：开发分支，所有功能开发基于此分支
+- `feature/*`：功能特性分支，用于开发新功能
+- `fix/*`：bug 修复分支
+
+### 提交规范
+
+```
+type(scope): description
+
+body
+```
+
+**type 类型**：
+- `feat`：新功能
+- `fix`：bug 修复
+- `docs`：文档更新
+- `refactor`：代码重构
+- `test`：测试用例
+- `chore`：其他维护工作
+
+### Pull Request 流程
+
+1. 从 `develop` 分支创建特性分支
+2. 完成开发并提交代码
+3. 创建 PR 到 `develop` 分支
+4. 等待代码审查和测试通过
+5. 合并到 `develop` 分支
+
+### 开发环境配置
+
+```powershell
+# 克隆仓库
+git clone <repository-url>
+cd you
+
+# 安装后端依赖
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+
+# 启动开发服务器
+python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
 该测试脚本会验证：
 
 - `/api/health`
