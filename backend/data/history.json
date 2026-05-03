@@ -1,6 +1,78 @@
 {
   "records": [
     {
+      "id": "3eb1678d-57e3-4695-9a70-e887d4f54038",
+      "created_at": "2026-05-03T09:38:33.866784+00:00",
+      "input_summary": {
+        "num_wells": 10,
+        "num_slots": 24,
+        "Q_min": 2527.4703,
+        "weights_raw": {
+          "w_energy": 0.34,
+          "w_carbon": 0.33,
+          "w_economic": 0.33
+        },
+        "weights_normalized": {
+          "w_energy": 0.34,
+          "w_carbon": 0.33,
+          "w_economic": 0.33
+        },
+        "optional_constraints": null,
+        "scenario_probability_sum": 1.0,
+        "normalization_notes": []
+      },
+      "objective_weights": {
+        "w_energy": 0.34,
+        "w_carbon": 0.33,
+        "w_economic": 0.33
+      },
+      "optimized_core_metrics": {
+        "feasible": true,
+        "total_energy": 6594.769,
+        "total_carbon": 2697.5891,
+        "expected_economic_cost": 7609.7191,
+        "objective_score": 0.0,
+        "total_production": 2527.552
+      },
+      "explanation_summary": "当前加权目标最偏向：能耗。与“全时运行”基准相比，最显著的相对变化维度为：碳排下降。"
+    },
+    {
+      "id": "be985002-523b-4749-82cb-ae8e858076d4",
+      "created_at": "2026-05-03T09:30:33.550213+00:00",
+      "input_summary": {
+        "num_wells": 10,
+        "num_slots": 24,
+        "Q_min": 2527.4703,
+        "weights_raw": {
+          "w_energy": 0.34,
+          "w_carbon": 0.33,
+          "w_economic": 0.33
+        },
+        "weights_normalized": {
+          "w_energy": 0.34,
+          "w_carbon": 0.33,
+          "w_economic": 0.33
+        },
+        "optional_constraints": null,
+        "scenario_probability_sum": 1.0,
+        "normalization_notes": []
+      },
+      "objective_weights": {
+        "w_energy": 0.34,
+        "w_carbon": 0.33,
+        "w_economic": 0.33
+      },
+      "optimized_core_metrics": {
+        "feasible": true,
+        "total_energy": 6544.961,
+        "total_carbon": 2638.3415,
+        "expected_economic_cost": 7710.1174,
+        "objective_score": 0.0,
+        "total_production": 2528.189
+      },
+      "explanation_summary": "当前加权目标最偏向：能耗。与“全时运行”基准相比，最显著的相对变化维度为：碳排下降。"
+    },
+    {
       "id": "a82bb840-83ae-413c-864b-a7d5529a169f",
       "created_at": "2026-04-23T05:07:21.239565+00:00",
       "input_summary": {

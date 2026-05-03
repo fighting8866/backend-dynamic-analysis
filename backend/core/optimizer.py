@@ -29,6 +29,12 @@ class OptimizePayload:
     w_economic: float
     Q_min: float
     hourly_load_cap: list[float] | None = None
+    # 可选：与队友单页 demo 对齐的扩展约束与分时电价（长度 24）
+    custom_price_t: list[float] | None = None
+    daily_carbon_cap: float | None = None
+    mutex_pairs: list[list[int]] | None = None
+    forbidden_well_hour: list[list[int]] | None = None
+    storm_limits: list[list[int]] | None = None
 
 
 def _empty_result(n: int, T: int, reason: str, diagnostics: dict[str, Any] | None = None, solver_engine: str | None = None) -> dict[str, Any]:
@@ -61,9 +67,20 @@ def _expected_electricity_price_t(scenarios: list[dict[str, Any]], t: int) -> fl
     return s
 
 
-def _anchor_metrics(wells: list[dict[str, Any]], scenarios: list[dict[str, Any]], gamma_t: list[float]) -> dict[str, tuple[float, float]]:
-    b0 = baseline.package_baseline("baseline_full_run", wells, scenarios, gamma_t)
-    b1 = baseline.package_baseline("baseline_simple_rule", wells, scenarios, gamma_t)
+def _price_at_t(payload: OptimizePayload, t: int) -> float:
+    if payload.custom_price_t is not None and len(payload.custom_price_t) == len(payload.wells[0]["q_it"]):
+        return float(payload.custom_price_t[t])
+    return _expected_electricity_price_t(payload.scenarios, t)
+
+
+def _anchor_metrics(
+    wells: list[dict[str, Any]],
+    scenarios: list[dict[str, Any]],
+    gamma_t: list[float],
+    hourly_price: list[float] | None = None,
+) -> dict[str, tuple[float, float]]:
+    b0 = baseline.package_baseline("baseline_full_run", wells, scenarios, gamma_t, hourly_electricity_price=hourly_price)
+    b1 = baseline.package_baseline("baseline_simple_rule", wells, scenarios, gamma_t, hourly_electricity_price=hourly_price)
 
     def span(key: str) -> tuple[float, float]:
         v0 = float(b0[key])
@@ -115,7 +132,14 @@ def _finalize_result(
     anchors: dict[str, tuple[float, float]],
     weights_normalized: tuple[float, float, float],
 ) -> dict[str, Any]:
-    m = baseline.compute_metrics(payload.wells, payload.scenarios, payload.gamma_t, schedule_matrix, startup_matrix)
+    m = baseline.compute_metrics(
+        payload.wells,
+        payload.scenarios,
+        payload.gamma_t,
+        schedule_matrix,
+        startup_matrix,
+        hourly_electricity_price=payload.custom_price_t,
+    )
     te = float(m["total_energy"])
     tc = float(m["total_carbon"])
     ek = float(m["expected_economic_cost"])
@@ -200,6 +224,42 @@ def _solve_with_ortools(payload: OptimizePayload, anchors: dict[str, tuple[float
             terms = [int(round(float(wells[i]["e_it"][t]) * 1000)) * x[i][t] for i in range(n)]
             model.Add(sum(terms) <= int(round(float(payload.hourly_load_cap[t]) * 1000)))
 
+    if payload.mutex_pairs:
+        for pair in payload.mutex_pairs:
+            if len(pair) != 2:
+                continue
+            i, j = int(pair[0]), int(pair[1])
+            if not (0 <= i < n and 0 <= j < n):
+                continue
+            for tt in range(T):
+                model.Add(x[i][tt] + x[j][tt] <= 1)
+
+    if payload.forbidden_well_hour:
+        for pair in payload.forbidden_well_hour:
+            if len(pair) != 2:
+                continue
+            ii, tt = int(pair[0]), int(pair[1])
+            if 0 <= ii < n and 0 <= tt < T:
+                model.Add(x[ii][tt] == 0)
+
+    if payload.storm_limits:
+        for pair in payload.storm_limits:
+            if len(pair) != 2:
+                continue
+            tt, mx = int(pair[0]), int(pair[1])
+            if 0 <= tt < T and mx >= 0:
+                model.Add(sum(x[i][tt] for i in range(n)) <= mx)
+
+    if payload.daily_carbon_cap is not None:
+        cap = float(payload.daily_carbon_cap)
+        cterms: list[Any] = []
+        for i in range(n):
+            for tt in range(T):
+                coef = int(round(float(wells[i]["e_it"][tt]) * float(payload.gamma_t[tt]) * 1000))
+                cterms.append(coef * x[i][tt])
+        if cterms:
+            model.Add(sum(cterms) <= int(round(cap * 1000)))
+
     den_E = max(E_hi - E_lo, 1e-6)
     den_C = max(C_hi - C_lo, 1e-6)
     den_K = max(K_hi - K_lo, 1e-6)
@@ -210,7 +270,7 @@ def _solve_with_ortools(payload: OptimizePayload, anchors: dict[str, tuple[float
         for t in range(T):
             e = float(wells[i]["e_it"][t])
             g = float(payload.gamma_t[t])
-            pt = _expected_electricity_price_t(payload.scenarios, t)
+            pt = _price_at_t(payload, t)
             cx = int(round(M * (we * e / den_E + wc * g * e / den_C + wk * pt * e / den_K)))
             obj_terms.append(cx * x[i][t])
             obj_terms.append(int(round(M * wk * cs / den_K)) * y[i][t])
@@ -278,6 +338,39 @@ def _solve_with_pulp(payload: OptimizePayload, anchors: dict[str, tuple[float, f
         for t in range(T):
             problem += pulp.lpSum(float(wells[i]["e_it"][t]) * x[(i, t)] for i in range(n)) <= float(payload.hourly_load_cap[t])
 
+    if payload.mutex_pairs:
+        for pair in payload.mutex_pairs:
+            if len(pair) != 2:
+                continue
+            i, j = int(pair[0]), int(pair[1])
+            if not (0 <= i < n and 0 <= j < n):
+                continue
+            for tt in range(T):
+                problem += x[(i, tt)] + x[(j, tt)] <= 1
+
+    if payload.forbidden_well_hour:
+        for pair in payload.forbidden_well_hour:
+            if len(pair) != 2:
+                continue
+            wi, tt = int(pair[0]), int(pair[1])
+            if 0 <= wi < n and 0 <= tt < T:
+                problem += x[(wi, tt)] == 0
+
+    if payload.storm_limits:
+        for pair in payload.storm_limits:
+            if len(pair) != 2:
+                continue
+            tt, mx = int(pair[0]), int(pair[1])
+            if 0 <= tt < T and mx >= 0:
+                problem += pulp.lpSum(x[(i, tt)] for i in range(n)) <= mx
+
+    if payload.daily_carbon_cap is not None:
+        cap = float(payload.daily_carbon_cap)
+        problem += (
+            pulp.lpSum(float(wells[i]["e_it"][tt]) * float(payload.gamma_t[tt]) * x[(i, tt)] for i in range(n) for tt in range(T))
+            <= cap
+        )
+
     den_E = max(E_hi - E_lo, 1e-6)
     den_C = max(C_hi - C_lo, 1e-6)
     den_K = max(K_hi - K_lo, 1e-6)
@@ -287,7 +380,7 @@ def _solve_with_pulp(payload: OptimizePayload, anchors: dict[str, tuple[float, f
         for t in range(T):
             e = float(wells[i]["e_it"][t])
             g = float(payload.gamma_t[t])
-            pt = _expected_electricity_price_t(payload.scenarios, t)
+            pt = _price_at_t(payload, t)
             objective.append((we * e / den_E + wc * g * e / den_C + wk * pt * e / den_K) * x[(i, t)])
             objective.append((wk * start_cost / den_K) * y[(i, t)])
     problem += pulp.lpSum(objective)
@@ -342,7 +435,7 @@ def optimize_schedule(payload: OptimizePayload) -> dict[str, Any]:
             diagnostics=diagnostics,
         )
 
-    anchors = _anchor_metrics(wells, payload.scenarios, payload.gamma_t)
+    anchors = _anchor_metrics(wells, payload.scenarios, payload.gamma_t, hourly_price=payload.custom_price_t)
     errors: list[str] = []
 
     try:

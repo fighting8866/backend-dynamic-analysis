@@ -52,6 +52,8 @@ def compute_metrics(
     gamma_t: list[float],
     schedule: list[list[int]],
     startup: list[list[int]],
+    *,
+    hourly_electricity_price: list[float] | None = None,
 ) -> dict[str, Any]:
     n, T = _num_wells_slots(wells)
     total_energy = 0.0
@@ -70,24 +72,37 @@ def compute_metrics(
                 total_carbon += float(gamma_t[t]) * e
 
     expected_economic = 0.0
-    for s in scenarios:
-        p = float(s["p_s"])
-        peak_hours = set(int(h) for h in s.get("peak_hours", []))
-        p_peak = float(s["peak_price"])
-        p_off = float(s["offpeak_price"])
+    if hourly_electricity_price is not None and len(hourly_electricity_price) == T:
         scen_cost = 0.0
         for i in range(n):
             for t in range(T):
-                if not schedule[i][t]:
-                    continue
-                price = p_peak if t in peak_hours else p_off
-                scen_cost += price * float(wells[i]["e_it"][t])
+                if schedule[i][t]:
+                    scen_cost += float(hourly_electricity_price[t]) * float(wells[i]["e_it"][t])
         start_cost = 0.0
         for i in range(n):
             for t in range(T):
                 if startup[i][t]:
                     start_cost += float(wells[i]["c_start_i"])
-        expected_economic += p * (scen_cost + start_cost)
+        expected_economic = scen_cost + start_cost
+    else:
+        for s in scenarios:
+            p = float(s["p_s"])
+            peak_hours = set(int(h) for h in s.get("peak_hours", []))
+            p_peak = float(s["peak_price"])
+            p_off = float(s["offpeak_price"])
+            scen_cost = 0.0
+            for i in range(n):
+                for t in range(T):
+                    if not schedule[i][t]:
+                        continue
+                    price = p_peak if t in peak_hours else p_off
+                    scen_cost += price * float(wells[i]["e_it"][t])
+            start_cost = 0.0
+            for i in range(n):
+                for t in range(T):
+                    if startup[i][t]:
+                        start_cost += float(wells[i]["c_start_i"])
+            expected_economic += p * (scen_cost + start_cost)
 
     return {
         "total_energy": round(total_energy, 4),
@@ -100,14 +115,21 @@ def compute_metrics(
     }
 
 
-def package_baseline(name: str, wells: list[dict[str, Any]], scenarios: list[dict[str, Any]], gamma_t: list[float]) -> dict[str, Any]:
+def package_baseline(
+    name: str,
+    wells: list[dict[str, Any]],
+    scenarios: list[dict[str, Any]],
+    gamma_t: list[float],
+    *,
+    hourly_electricity_price: list[float] | None = None,
+) -> dict[str, Any]:
     if name == "baseline_full_run":
         x, y = baseline_full_run(wells)
     elif name == "baseline_simple_rule":
         x, y = baseline_simple_rule(wells)
     else:
         raise ValueError(f"未知 baseline: {name}")
-    m = compute_metrics(wells, scenarios, gamma_t, x, y)
+    m = compute_metrics(wells, scenarios, gamma_t, x, y, hourly_electricity_price=hourly_electricity_price)
     run_hours = {wells[i]["well_id"]: int(sum(x[i])) for i in range(len(wells))}
     return {
         "name": name,

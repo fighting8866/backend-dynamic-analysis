@@ -7,8 +7,15 @@ from fastapi import APIRouter
 
 from core import baseline, explain, sensitivity
 from core.optimizer import OptimizePayload, optimize_schedule
+from core.page_adapter import run_page_auto_optimize
 from core.sample_generator import ensure_demo_files
-from core.schemas import AnalysisRunRequest, AnalysisRunResponse, SensitivityRequest, SensitivityResponse
+from core.schemas import (
+    AnalysisRunRequest,
+    AnalysisRunResponse,
+    AutoOptimizeRequest,
+    SensitivityRequest,
+    SensitivityResponse,
+)
 from core.storage import append_history
 from core.utils import rate_improvement
 
@@ -276,6 +283,13 @@ def run_analysis(req: AnalysisRunRequest) -> dict[str, Any]:
         "saved_record_id": rid,
         "sensitivity_preview": sens,
     }
+
+
+@router.post("/api/analysis/auto-optimize")
+def auto_optimize(req: AutoOptimizeRequest) -> dict[str, Any]:
+    """队友单页表单风格：6 井 × 24 时 + 分时电价与互斥/夜间/风暴/碳上限，后端三权重各跑一次 MILP。"""
+    ensure_demo_files(_data_dir())
+    return run_page_auto_optimize(req)
 
 
 @router.post("/api/analysis/sensitivity", response_model=SensitivityResponse)

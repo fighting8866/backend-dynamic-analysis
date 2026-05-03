@@ -321,3 +321,47 @@ class SampleDataResponse(BaseModel):
     recommended_Q_min: float
     request_template: dict[str, Any]
     run_request_example: dict[str, Any]
+
+
+class WellPageRow(BaseModel):
+    """与队友单页 demo 表单字段对齐（单井标量参数，后端展开为 24 时段）。"""
+
+    id: int | None = None
+    well_id: str | None = None
+    P_rated: float = Field(default=30, gt=0, description="额定功率/时段耗电近似 (kW)")
+    q_rate: float = Field(default=0.5, ge=0, description="单位时段产量近似")
+    c_start: float = Field(default=100, ge=0, description="启动成本")
+    H_min: int = Field(default=4, ge=0, le=NUM_SLOTS)
+    H_max: int = Field(default=20, ge=0, le=NUM_SLOTS)
+
+    @model_validator(mode="after")
+    def check_hours(self) -> "WellPageRow":
+        if self.H_max < self.H_min:
+            raise ValueError("H_max 不能小于 H_min")
+        return self
+
+
+class PageAdvancedParams(BaseModel):
+    """与队友 HTML 高级参数默认值对齐。"""
+
+    oil_price: float = Field(default=3500, ge=0)
+    gamma: float = Field(default=0.5, ge=0, description="碳排折算系数（对应 HTML gamma）")
+    P_max: float = Field(default=250, gt=0, description="变压器/母线分时总负荷上限 (kW)")
+    Q_min: float = Field(default=20, ge=0, description="24h 最低总产量")
+    peak_price: float = Field(default=0.8225, gt=0)
+    flat_price: float = Field(default=0.6277, gt=0)
+    valley_price: float = Field(default=0.4329, gt=0)
+    daily_carbon_limit: float = Field(default=1500, gt=0, description="日碳排上限（与模型量纲一致）")
+    peak_hours_clock: list[int] = Field(default_factory=lambda: [8, 9, 10, 11, 12, 18, 19, 20, 21, 22])
+    flat_hours_clock: list[int] = Field(default_factory=lambda: [12, 13, 14, 15, 16, 17, 18, 22, 23, 24])
+    mutex_pairs_clock: list[list[int]] = Field(default_factory=lambda: [[1, 3]])
+    noisy_wells_clock: list[int] = Field(default_factory=lambda: [3, 6])
+    night_hours_clock: list[int] = Field(default_factory=lambda: [23, 24, 1, 2, 3, 4, 5])
+    storm_hours_clock: list[int] = Field(default_factory=lambda: [13, 14])
+    max_running_during_storm: int = Field(default=6, ge=0)
+    N_max_startups_default: int = Field(default=8, ge=0, le=NUM_SLOTS, description="每井最大启动次数默认")
+
+
+class AutoOptimizeRequest(BaseModel):
+    wells: list[WellPageRow] = Field(min_length=1, max_length=24)
+    advanced: PageAdvancedParams | None = None

@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽油机节能方案计算</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: url('https://p26-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/73b13ce77cfc413d9555b899f96f3443.png~tplv-a9rns2rl98-24:720:720.png?lk3s=8e244e95&rcl=2026042214291365F685F550F0724231DE&rrcfp=8a172a1a&x-expires=1777444153&x-signature=uAIF2E4UA5bbo4rqMYJ%2FBkwhIeE%3D') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 50%, rgba(15,52,96,0.9) 100%);
+            z-index: -1;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            color: #e94560;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+        .pumping-unit-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            border-color: #e94560;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .input-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .input-section h2 {
+            color: #e94560;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 10px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 0.95em;
+        }
+        .input-group input, .input-group select {
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1.1em;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .input-group input::placeholder {
+            color: rgba(255,255,250,0.4);
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 20px rgba(233,69,96,0.3);
+            transform: translateY(-2px);
+        }
+        .input-group select option {
+            background: #16213e;
+            color: #fff;
+        }
+        .unit {
+            color: #a0a0a0;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        .calculate-btn {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 30px auto 0;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 5px 20px rgba(233,69,96,0.4);
+        }
+        .calculate-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(233,69,96,0.7);
+        }
+        .results-section {
+            display: none;
+        }
+        .results-section.show {
+            display: block;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 35px;
+            margin: 40px 0;
+            padding: 20px;
+        }
+        .result-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+            border-radius: 24px;
+            padding: 28px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.12);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+        .result-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            border-color: rgba(255,255,255,0.25);
+        }
+        .result-card.energy {
+            border-left: 4px solid #00d9ff;
+            box-shadow: inset 0 0 30px rgba(0,217,255,0.08);
+        }
+        .result-card.production {
+            border-left: 4px solid #00ff88;
+            box-shadow: inset 0 0 30px rgba(0,255,136,0.08);
+        }
+        .result-card.balanced {
+            border-left: 4px solid #ffd700;
+            box-shadow: inset 0 0 30px rgba(255,215,0,0.08);
+        }
+        .result-card.best {
+            border: 2px solid #e94560 !important;
+            background: linear-gradient(135deg, rgba(233,69,96,0.12) 0%, rgba(233,69,96,0.05) 100%) !important;
+            box-shadow: 0 0 35px rgba(233,69,96,0.35) !important;
+            transform: translateY(-5px);
+        }
+        .best-badge {
+            position: absolute;
+            top: -8px;
+            right: 25px;
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.8em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+            z-index: 10;
+            display: none;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(233,69,96,0.4); }
+            50% { box-shadow: 0 4px 25px rgba(233,69,96,0.6); }
+        }
+        .result-card.best .best-badge {
+            display: block;
+        }
+        .result-card h3 {
+            font-size: 1.45em;
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .result-card h3::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            border-radius: 2px;
+        }
+        .result-card.energy h3 { color: #00d9ff; }
+        .result-card.energy h3::before { background: #00d9ff; }
+        .result-card.production h3 { color: #00ff88; }
+        .result-card.production h3::before { background: #00ff88; }
+        .result-card.balanced h3 { color: #ffd700; }
+        .result-card.balanced h3::before { background: #ffd700; }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s ease;
+        }
+        .result-item:hover {
+            background: rgba(255,255,255,0.05);
+            margin: 0 -10px;
+            padding: 14px 10px;
+            border-radius: 8px;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item .label { 
+            color: #a0a0a0; 
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .result-item .label::before {
+            content: '▸';
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8em;
+        }
+        .result-item .value { 
+            font-weight: bold; 
+            font-size: 1.15em;
+            color: #fff;
+            min-width: 100px;
+            text-align: right;
+        }
+        .result-item.highlight {
+            background: rgba(255,255,255,0.06);
+            margin: 5px -8px;
+            padding: 16px 8px;
+            border-radius: 10px;
+            border-bottom: none;
+        }
+        .result-item.highlight .value { 
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        .result-card.energy .result-item.highlight .value { color: #00d9ff; }
+        .result-card.production .result-item.highlight .value { color: #00ff88; }
+        .result-card.balanced .result-item.highlight .value { color: #ffd700; }
+        .result-item.highlight .value.negative { color: #e94560 !important; }
+
+        .chart-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .chart-section h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 12px;
+            text-align: center;
+        }
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        #loadCurveChart {
+            width: 1200px;
+            height: 450px;
+            margin: 0 auto;
+        }
+        #heatmapChart {
+            width: 1200px;
+            height: 380px;
+            margin: 0 auto;
+        }
+        #radarChart {
+            width: 1200px;
+            height: 360px;
+            margin: 0 auto;
+        }
+        #comparisonChart {
+            width: 1200px;
+            height: 400px;
+            margin: 0 auto;
+        }
+        #basicComparisonChart {
+            width: 1200px;
+            height: 380px;
+            margin: 0 auto;
+        }
+        .export-btn {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #00d9ff, #0099cc);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 5px 20px rgba(0,217,255,0.4);
+        }
+        .export-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,217,255,0.7);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://p26-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/73b13ce77cfc413d9555b899f96f3443.png~tplv-a9rns2rl98-24:720:720.png?lk3s=8e244e95&rcl=2026042214291365F685F550F0724231DE&rrcfp=8a172a1a&x-expires=1777444153&x-signature=uAIF2E4UA5bbo4rqMYJ%2FBkwhIeE%3D') no-repeat center center fixed;
+            background-size: cover;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            padding: 20px;
+        }
+        .loading-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(22,33,62,0.95) 100%);
+            z-index: -1;
+        }
+        .loading-spin {
+            width: 70px;
+            height: 70px;
+            border: 4px solid rgba(233,69,96,0.2);
+            border-top: 4px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .loading-title {
+            font-size: 1.4em;
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        .loading-step {
+            font-size: 1em;
+            color: #a0a0a0;
+            margin-top: 10px;
+        }
+        .formula-box {
+            width: 100%;
+            max-width: 700px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 10px 0;
+            overflow: hidden;
+            height: 140px;
+            position: relative;
+        }
+        .formula-scroll {
+            animation: scrollFormula 8s linear infinite;
+            line-height: 1.8;
+            font-size: 1.05em;
+            color: #00d9ff;
+            white-space: pre-wrap;
+        }
+        @keyframes scrollFormula {
+            0% { transform: translateY(140px); }
+            100% { transform: translateY(-100%); }
+        }
+        .data-panel {
+            display: flex;
+            gap: 22px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .data-item {
+            background: rgba(255,255,255,0.08);
+            padding: 16px 20px;
+            border-radius: 12px;
+            min-width: 140px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .data-item:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-3px);
+        }
+        .data-item .label { font-size: 0.8em; color: #aaa; }
+        .data-item .num { font-size: 1.3em; font-weight: bold; color: #00ff88; }
+
+        .history-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .history-section h2 {
+            color: #e94560;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 10px;
+        }
+        .history-toggle {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(108,92,231,0.4);
+        }
+        .history-toggle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(108,92,231,0.6);
+        }
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 18px;
+            border-left: 4px solid #6c5ce7;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .history-item-time { font-size: 0.9em; color: #a0a0a0; }
+        .history-item-actions { display: flex; gap: 10px; }
+        .history-item-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .history-item-btn.view { background: #00d9ff; color: #1a1a2e; }
+        .history-item-btn.delete { background: #e94560; color: #fff; }
+        .history-item-btn:hover { transform: translateY(-2px); }
+        .history-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        .history-summary-item { color: #ccc; }
+        .history-summary-item .value { font-weight: bold; color: #fff; }
+        .no-history {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 40px 0;
+            font-style: italic;
+        }
+
+        .well-params-table-container {
+            overflow-x: auto;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .well-params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .well-params-table th, .well-params-table td {
+            padding: 18px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .well-params-table th {
+            background: linear-gradient(135deg, rgba(233,69,96,0.4) 0%, rgba(233,69,96,0.2) 100%);
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .well-params-table tr:hover td {
+            background: rgba(255,255,255,0.08);
+        }
+        .well-params-table tr:nth-child(even) td {
+            background: rgba(255,255,255,0.02);
+        }
+        .well-params-table tr:last-child td {
+            border-bottom: none;
+        }
+        .well-params-table td:first-child {
+            font-weight: bold;
+            color: #00d9ff;
+            background: rgba(0,217,255,0.1);
+            min-width: 70px;
+        }
+        .well-params-table td input {
+            width: 100%;
+            min-width: 70px;
+            max-width: 130px;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            text-align: center;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        .well-params-table td input:hover {
+            border-color: rgba(233,69,96,0.4);
+        }
+        .well-params-table td input:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 15px rgba(233,69,96,0.3);
+            transform: scale(1.02);
+        }
+
+        .constraint-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .constraint-info h4 {
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        .constraint-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 8px;
+            font-size: 0.85em;
+            color: #a0a0a0;
+        }
+
+        .basic-input-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .basic-input-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .basic-input-group {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .basic-input-group:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(233,69,96,0.3);
+        }
+        .basic-input-group.wide {
+            grid-column: 1 / -1;
+        }
+        .basic-input-group label {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        .basic-input-group input,
+        .basic-input-group select {
+            padding: 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 1.05em;
+            transition: all 0.3s ease;
+        }
+        .basic-input-group input:focus,
+        .basic-input-group select:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 15px rgba(233,69,96,0.2);
+        }
+        .basic-input-group .output-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .basic-input-group .output-selector input {
+            flex: 1;
+        }
+        .basic-input-group .output-selector select {
+            min-width: 120px;
+        }
+        .basic-input-group .unit {
+            color: #888;
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        .basic-info-box {
+            background: rgba(233,69,96,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 4px solid #e94560;
+        }
+        .basic-info-box h4 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        .basic-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .info-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        .info-icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        .info-content {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-title {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        .info-desc {
+            font-size: 0.85em;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        .basic-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            margin: 35px 0;
+            padding: 15px;
+        }
+        .basic-result-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+        .basic-result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        }
+        .basic-result-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .basic-result-card.green {
+            border-top: 4px solid #00ff88;
+            box-shadow: inset 0 0 25px rgba(0,255,136,0.06);
+        }
+        .basic-result-card.blue {
+            border-top: 4px solid #00d9ff;
+            box-shadow: inset 0 0 25px rgba(0,217,255,0.06);
+        }
+        .basic-result-card.yellow {
+            border-top: 4px solid #ffd700;
+            box-shadow: inset 0 0 25px rgba(255,215,0,0.06);
+        }
+        .basic-result-card.best {
+            border: 2px solid #e94560;
+            background: linear-gradient(135deg, rgba(233,69,96,0.1) 0%, rgba(233,69,96,0.04) 100%);
+            box-shadow: 0 0 30px rgba(233,69,96,0.3);
+            transform: translateY(-3px);
+        }
+        .basic-best-badge {
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            box-shadow: 0 3px 12px rgba(233,69,96,0.4);
+            z-index: 10;
+            display: none;
+            animation: basicPulse 2s infinite;
+        }
+        @keyframes basicPulse {
+            0%, 100% { box-shadow: 0 3px 12px rgba(233,69,96,0.4); }
+            50% { box-shadow: 0 3px 20px rgba(233,69,96,0.6); }
+        }
+        .basic-result-card.best .basic-best-badge {
+            display: block;
+        }
+        .basic-result-card h3 {
+            font-size: 1.35em;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .basic-result-card h3::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .basic-result-card.green h3 { color: #00ff88; }
+        .basic-result-card.green h3::before { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .basic-result-card.blue h3 { color: #00d9ff; }
+        .basic-result-card.blue h3::before { background: #00d9ff; box-shadow: 0 0 10px #00d9ff; }
+        .basic-result-card.yellow h3 { color: #ffd700; }
+        .basic-result-card.yellow h3::before { background: #ffd700; box-shadow: 0 0 10px #ffd700; }
+        .basic-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        .basic-result-item:hover {
+            background: rgba(255,255,255,0.04);
+            margin: 0 -8px;
+            padding: 12px 8px;
+            border-radius: 6px;
+        }
+        .basic-result-item:last-child { border-bottom: none; }
+        .basic-result-item .label { 
+            color: #a0a0a0; 
+            font-size: 0.92em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .basic-result-item .label::before {
+            content: '•';
+            color: rgba(255,255,255,0.25);
+            font-size: 0.6em;
+        }
+        .basic-result-item .value { 
+            font-weight: 600; 
+            font-size: 1.1em;
+            color: #fff;
+            min-width: 85px;
+            text-align: right;
+        }
+        .basic-result-item.highlight {
+            background: rgba(255,255,255,0.05);
+            margin: 4px -6px;
+            padding: 14px 6px;
+            border-radius: 8px;
+            border-bottom: none;
+        }
+        .basic-result-item.highlight .value { 
+            font-size: 1.35em;
+            font-weight: 700;
+        }
+        .basic-result-card.green .basic-result-item.highlight .value { color: #00ff88; }
+        .basic-result-card.blue .basic-result-item.highlight .value { color: #00d9ff; }
+        .basic-result-card.yellow .basic-result-item.highlight .value { color: #ffd700; }
+        .basic-result-item.highlight .value.negative { color: #e94560 !important; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.6em; }
+            .input-grid, .results-grid, .chart-row { grid-template-columns: 1fr; }
+            .input-section { padding: 20px; }
+            .result-card { padding: 20px; }
+            .calculate-btn, .export-btn { padding: 15px 30px; font-size: 1.1em; }
+            #loadCurveChart { height: 380px; }
+            #heatmapChart { height: 320px; }
+            #radarChart { height: 300px; }
+            #comparisonChart { height: 340px; }
+            #basicComparisonChart { height: 320px; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingPage">
+  <div class="loading-spin"></div>
+  <div class="loading-title">抽油机井群优化系统 - 正在运算中</div>
+  <div class="loading-step" id="loadingStep">初始化参数...</div>
+  <div class="formula-box">
+    <div class="formula-scroll">
+日节电量 = 抽油机功率 × 停机小时
+停机小时 = 日产量损失 ÷ 小时产量
+日产量损失 = 日产量 × 损失率
+日净收益 = 电费节省 - 产量损失价值
+减碳量 = 节电量 × 0.6 kg/度
+
+【节能优先】权重: 节能0.8 降碳0.1 效益0.1
+【效益最高】权重: 节能0.1 降碳0.1 效益0.8
+【平衡方案】权重: 节能0.4 降碳0.3 效益0.3
+
+16个约束条件优化求解
+最低产量 · 运行时长 · 启停逻辑 · 变压器容量
+连续运行 · 备用容量 · 产量平稳 · 峰谷电费
+检修计划 · 互斥运行 · 碳排放限制 · 噪声控制
+    </div>
+  </div>
+  <div class="data-panel">
+    <div class="data-item"><div class="label">井数</div><div class="num" id="ld_wells">6</div></div>
+    <div class="data-item"><div class="label">时段</div><div class="num" id="ld_hours">24</div></div>
+    <div class="data-item"><div class="label">约束数</div><div class="num">16</div></div>
+    <div class="data-item"><div class="label">方案数</div><div class="num">3</div></div>
+  </div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <span class="pumping-unit-icon">🛢️</span>
+        <h1>抽油机井群多目标优化系统</h1>
+        <p>支持6口油井、24小时优化、16个约束条件、三种优化方案</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('basic')">📊 基础单井优化</button>
+        <button class="tab-btn" onclick="switchTab('advanced')">⚙️ 高级井群优化</button>
+    </div>
+
+    <div id="tab-basic" class="tab-content active">
+        <div class="input-section">
+            <h2>📊 基础单井优化 - 参数输入</h2>
+            <p style="color: #a0a0a0; margin-bottom: 25px; font-size: 0.95em;">输入单井参数，系统将自动生成三种节能方案并进行对比分析</p>
+            
+            <div class="basic-input-grid">
+                <div class="basic-input-row">
+                    <div class="basic-input-group">
+                        <label>⚡ 抽油机功率</label>
+                        <input type="text" id="power" placeholder="请输入功率值">
+                        <span class="unit">单位：kW（千瓦）</span>
+                    </div>
+                    <div class="basic-input-group">
+                        <label>📦 油井产量</label>
+                        <div class="output-selector">
+                            <input type="text" id="outputValue" placeholder="请输入产量值">
+                            <select id="outputUnit">
+                                <option value="day">吨/天</option>
+                                <option value="month">吨/月</option>
+                                <option value="year">吨/年</option>
+                            </select>
+                        </div>
+                        <span class="unit">选择产量单位</span>
+                    </div>
+                </div>
+                
+                <div class="basic-input-row">
+                    <div class="basic-input-group">
+                        <label>💰 工业电价</label>
+                        <input type="text" id="electricityPrice" placeholder="请输入电价">
+                        <span class="unit">单位：元/度</span>
+                    </div>
+                    <div class="basic-input-group">
+                        <label>🛢️ 原油价格</label>
+                        <input type="text" id="oilPrice" placeholder="请输入原油价格">
+                        <span class="unit">单位：元/吨</span>
+                    </div>
+                </div>
+                
+                <div class="basic-input-row">
+                    <div class="basic-input-group wide">
+                        <label>📉 最大允许产量损失比</label>
+                        <input type="text" id="maxLossRatio" placeholder="请输入损失比">
+                        <span class="unit">单位：%（节能优先方案将以此为上限计算）</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="basic-info-box">
+                <h4>💡 方案说明</h4>
+                <div class="basic-info-grid">
+                    <div class="info-item">
+                        <div class="info-icon">⚡</div>
+                        <div class="info-content">
+                            <div class="info-title">节能优先</div>
+                            <div class="info-desc">以最大允许损失比为上限，尽可能多停机以节省电力</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon">🛢️</div>
+                        <div class="info-content">
+                            <div class="info-title">保产优先</div>
+                            <div class="info-desc">产量损失控制在极小范围内，保证原油产出</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon">⚖️</div>
+                        <div class="info-content">
+                            <div class="info-title">平衡方案</div>
+                            <div class="info-desc">通过遍历分析，找出净收益最大化的运行方案</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="calculate-btn" onclick="calculateBasic()">🚀 开始计算</button>
+        </div>
+    </div>
+
+    <div id="tab-advanced" class="tab-content">
+        <div class="input-section">
+            <h2>⚙️ 井群参数配置</h2>
+            <p style="color: #a0a0a0; margin-bottom: 20px;">配置6口油井的技术参数，系统将自动进行24小时优化调度</p>
+            
+            <table class="well-params-table" id="wellParamsTable">
+                <thead>
+                    <tr>
+                        <th>井号</th>
+                        <th>额定功率(kW)</th>
+                        <th>产油率(m³/h)</th>
+                        <th>启动成本(元)</th>
+                        <th>最小运行时长(h)</th>
+                        <th>最大运行时长(h)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>W01</td><td><input type="text" id="w1_power" value="30"></td><td><input type="text" id="w1_qrate" value="0.5"></td><td><input type="text" id="w1_cost" value="100"></td><td><input type="text" id="w1_hmin" value="4"></td><td><input type="text" id="w1_hmax" value="20"></td></tr>
+                    <tr><td>W02</td><td><input type="text" id="w2_power" value="40"></td><td><input type="text" id="w2_qrate" value="0.7"></td><td><input type="text" id="w2_cost" value="120"></td><td><input type="text" id="w2_hmin" value="4"></td><td><input type="text" id="w2_hmax" value="20"></td></tr>
+                    <tr><td>W03</td><td><input type="text" id="w3_power" value="35"></td><td><input type="text" id="w3_qrate" value="0.6"></td><td><input type="text" id="w3_cost" value="110"></td><td><input type="text" id="w3_hmin" value="4"></td><td><input type="text" id="w3_hmax" value="20"></td></tr>
+                    <tr><td>W04</td><td><input type="text" id="w4_power" value="45"></td><td><input type="text" id="w4_qrate" value="0.8"></td><td><input type="text" id="w4_cost" value="130"></td><td><input type="text" id="w4_hmin" value="4"></td><td><input type="text" id="w4_hmax" value="20"></td></tr>
+                    <tr><td>W05</td><td><input type="text" id="w5_power" value="50"></td><td><input type="text" id="w5_qrate" value="0.9"></td><td><input type="text" id="w5_cost" value="140"></td><td><input type="text" id="w5_hmin" value="4"></td><td><input type="text" id="w5_hmax" value="20"></td></tr>
+                    <tr><td>W06</td><td><input type="text" id="w6_power" value="38"></td><td><input type="text" id="w6_qrate" value="0.65"></td><td><input type="text" id="w6_cost" value="115"></td><td><input type="text" id="w6_hmin" value="4"></td><td><input type="text" id="w6_hmax" value="20"></td></tr>
+                </tbody>
+            </table>
+
+            <h3 style="color: #e94560; margin: 25px 0 15px; font-size: 1.2em;">⚡ 系统参数</h3>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>原油价格</label>
+                    <input type="text" id="adv_oil_price" value="3500">
+                    <span class="unit">单位：元/m³</span>
+                </div>
+                <div class="input-group">
+                    <label>碳排放因子</label>
+                    <input type="text" id="adv_carbon_factor" value="0.5">
+                    <span class="unit">单位：kgCO2/kWh</span>
+                </div>
+                <div class="input-group">
+                    <label>变压器最大容量</label>
+                    <input type="text" id="adv_transformer_max" value="250">
+                    <span class="unit">单位：kW</span>
+                </div>
+                <div class="input-group">
+                    <label>最低日产量要求</label>
+                    <input type="text" id="adv_q_min" value="20">
+                    <span class="unit">单位：m³</span>
+                </div>
+                <div class="input-group">
+                    <label>峰时电价</label>
+                    <input type="text" id="adv_peak_price" value="0.8225">
+                    <span class="unit">单位：元/kWh (8:00-12:00, 18:00-22:00)</span>
+                </div>
+                <div class="input-group">
+                    <label>平时电价</label>
+                    <input type="text" id="adv_flat_price" value="0.6277">
+                    <span class="unit">单位：元/kWh</span>
+                </div>
+                <div class="input-group">
+                    <label>谷时电价</label>
+                    <input type="text" id="adv_valley_price" value="0.4329">
+                    <span class="unit">单位：元/kWh</span>
+                </div>
+                <div class="input-group">
+                    <label>日碳排放上限</label>
+                    <input type="text" id="adv_carbon_limit" value="1500">
+                    <span class="unit">单位：kgCO2</span>
+                </div>
+            </div>
+
+            <div class="constraint-info">
+                <h4>📋 优化约束条件 (16个)</h4>
+                <div class="constraint-list">
+                    <span>1. 最低产量约束</span>
+                    <span>2. 单井运行时长约束</span>
+                    <span>3. 启停逻辑约束</span>
+                    <span>4. 最大启停次数约束</span>
+                    <span>5. 变压器容量约束</span>
+                    <span>6. 最小连续运行约束</span>
+                    <span>7. 最小连续停机约束</span>
+                    <span>8. 备用容量约束</span>
+                    <span>9. 产量平稳性约束</span>
+                    <span>10. 峰谷电费比例约束</span>
+                    <span>11. 计划检修约束</span>
+                    <span>12. 互斥运行约束</span>
+                    <span>13. 碳排放总量约束</span>
+                    <span>14. 夜间噪声约束</span>
+                    <span>15. 恶劣天气约束</span>
+                    <span>16. 启停时间间隔约束</span>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateAdvanced()">🚀 启动井群优化</button>
+        </div>
+    </div>
+
+    <div class="results-section" id="basic-results" style="display: none;">
+        <div class="results-header">
+            <h2>📊 基础单井优化 - 计算结果</h2>
+            <p style="color: #aaa; font-size: 0.9em;">已完成三种节能方案的计算分析，以下是详细对比结果</p>
+        </div>
+        
+        <div class="basic-results-grid">
+            <div class="basic-result-card green" id="basic-card-energy">
+                <div class="basic-best-badge">推荐方案</div>
+                <h3>⚡ 节能优先方案</h3>
+                <div class="basic-result-item"><span class="label">节电量</span><span class="value" id="basic-energy-savings">-</span></div>
+                <div class="basic-result-item"><span class="label">电费节省</span><span class="value" id="basic-energy-money">-</span></div>
+                <div class="basic-result-item"><span class="label">产量损失</span><span class="value" id="basic-energy-loss">-</span></div>
+                <div class="basic-result-item"><span class="label">损失率</span><span class="value" id="basic-energy-lossrate">-</span></div>
+                <div class="basic-result-item"><span class="label">碳减排量</span><span class="value" id="basic-energy-carbon">-</span></div>
+                <div class="basic-result-item highlight"><span class="label">净收益</span><span class="value" id="basic-energy-profit">-</span></div>
+            </div>
+            <div class="basic-result-card blue" id="basic-card-production">
+                <div class="basic-best-badge">推荐方案</div>
+                <h3>🛢️ 保产优先方案</h3>
+                <div class="basic-result-item"><span class="label">节电量</span><span class="value" id="basic-benefit-savings">-</span></div>
+                <div class="basic-result-item"><span class="label">电费节省</span><span class="value" id="basic-benefit-money">-</span></div>
+                <div class="basic-result-item"><span class="label">产量损失</span><span class="value" id="basic-benefit-loss">-</span></div>
+                <div class="basic-result-item"><span class="label">损失率</span><span class="value" id="basic-benefit-lossrate">-</span></div>
+                <div class="basic-result-item"><span class="label">碳减排量</span><span class="value" id="basic-benefit-carbon">-</span></div>
+                <div class="basic-result-item highlight"><span class="label">净收益</span><span class="value" id="basic-benefit-profit">-</span></div>
+            </div>
+            <div class="basic-result-card yellow" id="basic-card-balanced">
+                <div class="basic-best-badge">推荐方案</div>
+                <h3>⚖️ 平衡方案</h3>
+                <div class="basic-result-item"><span class="label">节电量</span><span class="value" id="basic-balanced-savings">-</span></div>
+                <div class="basic-result-item"><span class="label">电费节省</span><span class="value" id="basic-balanced-money">-</span></div>
+                <div class="basic-result-item"><span class="label">产量损失</span><span class="value" id="basic-balanced-loss">-</span></div>
+                <div class="basic-result-item"><span class="label">损失率</span><span class="value" id="basic-balanced-lossrate">-</span></div>
+                <div class="basic-result-item"><span class="label">碳减排量</span><span class="value" id="basic-balanced-carbon">-</span></div>
+                <div class="basic-result-item highlight"><span class="label">净收益</span><span class="value" id="basic-balanced-profit">-</span></div>
+            </div>
+        </div>
+
+        <div class="chart-section basic-chart">
+            <h2>📊 基础方案对比柱状图</h2>
+            <p style="color: #aaa; font-size: 0.85em; text-align: center; margin-bottom: 15px;">展示三种方案的核心指标对比（节电量、电费节省、碳减排、净收益）</p>
+            <div id="basicComparisonChart"></div>
+        </div>
+
+        <button class="export-btn" onclick="exportBasicResults()">📤 导出单井优化结果</button>
+    </div>
+
+    <div class="results-section" id="advanced-results" style="display: none;">
+        <div class="results-header">
+            <h2>⚙️ 高级井群优化 - 计算结果</h2>
+            <p style="color: #aaa; font-size: 0.9em;">6口油井24小时优化调度完成，以下是三种目标函数的优化结果对比</p>
+        </div>
+        
+        <div class="results-grid">
+            <div class="result-card energy" id="card-energy">
+                <div class="best-badge">最优方案</div>
+                <h3>⚡ 节能优先方案</h3>
+                <div class="result-item"><span class="label">总能耗</span><span class="value" id="adv-energy-consumption">-</span></div>
+                <div class="result-item"><span class="label">碳排放</span><span class="value" id="adv-energy-emission">-</span></div>
+                <div class="result-item"><span class="label">总成本</span><span class="value" id="adv-energy-cost">-</span></div>
+                <div class="result-item"><span class="label">总收入</span><span class="value" id="adv-energy-revenue">-</span></div>
+                <div class="result-item highlight"><span class="label">净利润</span><span class="value" id="adv-energy-profit">-</span></div>
+                <div class="result-item"><span class="label">总产量</span><span class="value" id="adv-energy-oil">-</span></div>
+                <div class="result-item"><span class="label">峰值负荷</span><span class="value" id="adv-energy-peakload">-</span></div>
+                <div class="result-item"><span class="label">启停次数</span><span class="value" id="adv-energy-startups">-</span></div>
+            </div>
+            <div class="result-card production" id="card-production">
+                <div class="best-badge">最优方案</div>
+                <h3>💰 效益最高方案</h3>
+                <div class="result-item"><span class="label">总能耗</span><span class="value" id="adv-benefit-consumption">-</span></div>
+                <div class="result-item"><span class="label">碳排放</span><span class="value" id="adv-benefit-emission">-</span></div>
+                <div class="result-item"><span class="label">总成本</span><span class="value" id="adv-benefit-cost">-</span></div>
+                <div class="result-item"><span class="label">总收入</span><span class="value" id="adv-benefit-revenue">-</span></div>
+                <div class="result-item highlight"><span class="label">净利润</span><span class="value" id="adv-benefit-profit">-</span></div>
+                <div class="result-item"><span class="label">总产量</span><span class="value" id="adv-benefit-oil">-</span></div>
+                <div class="result-item"><span class="label">峰值负荷</span><span class="value" id="adv-benefit-peakload">-</span></div>
+                <div class="result-item"><span class="label">启停次数</span><span class="value" id="adv-benefit-startups">-</span></div>
+            </div>
+            <div class="result-card balanced" id="card-balanced">
+                <div class="best-badge">最优方案</div>
+                <h3>⚖️ 平衡方案</h3>
+                <div class="result-item"><span class="label">总能耗</span><span class="value" id="adv-balanced-consumption">-</span></div>
+                <div class="result-item"><span class="label">碳排放</span><span class="value" id="adv-balanced-emission">-</span></div>
+                <div class="result-item"><span class="label">总成本</span><span class="value" id="adv-balanced-cost">-</span></div>
+                <div class="result-item"><span class="label">总收入</span><span class="value" id="adv-balanced-revenue">-</span></div>
+                <div class="result-item highlight"><span class="label">净利润</span><span class="value" id="adv-balanced-profit">-</span></div>
+                <div class="result-item"><span class="label">总产量</span><span class="value" id="adv-balanced-oil">-</span></div>
+                <div class="result-item"><span class="label">峰值负荷</span><span class="value" id="adv-balanced-peakload">-</span></div>
+                <div class="result-item"><span class="label">启停次数</span><span class="value" id="adv-balanced-startups">-</span></div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>📈 24小时负荷曲线对比</h2>
+            <p style="color: #aaa; font-size: 0.85em; text-align: center; margin-bottom: 15px;">展示三种方案的24小时功率负荷变化趋势</p>
+            <div id="loadCurveChart"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>🗺️ 井群运行计划热力图</h2>
+            <p style="color: #aaa; font-size: 0.85em; text-align: center; margin-bottom: 15px;">展示6口油井在平衡方案下的24小时运行状态（蓝色为运行，白色为停机）</p>
+            <div id="heatmapChart"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>🎯 多指标性能雷达图</h2>
+            <p style="color: #aaa; font-size: 0.85em; text-align: center; margin-bottom: 15px;">从能耗、利润、产量、启停次数四个维度对比三种方案</p>
+            <div id="radarChart"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>📊 关键指标对比柱状图</h2>
+            <p style="color: #aaa; font-size: 0.85em; text-align: center; margin-bottom: 15px;">展示三种方案的能耗、碳排放、成本、利润、产量对比</p>
+            <div id="comparisonChart"></div>
+        </div>
+
+        <button class="export-btn" onclick="exportAdvancedResults()">📤 导出井群优化结果</button>
+    </div>
+
+    <div class="history-section">
+        <h2>📋 计算历史记录</h2>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+            <button class="history-toggle" onclick="toggleHistory()">查看历史记录</button>
+            <button class="history-toggle" onclick="clearAllHistory()" style="background: linear-gradient(135deg, #e94560, #c73e54);">🗑️ 一键清空</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="no-history" id="noHistory">暂无历史记录</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE_URL = "http://localhost:8000";
+
+let globalAdvancedResults = {
+    energy: null,
+    benefit: null,
+    balanced: null,
+    schedules: null
+};
+let chartInstances = {};
+let basicResultsCalculated = false;
+let advancedResultsCalculated = false;
+
+async function requestBackend(path, data) {
+    try {
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const errorMsg = errorData?.detail || `HTTP Error: ${response.status}`;
+            alert(`后端接口调用失败: ${errorMsg}`);
+            throw new Error(errorMsg);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            alert('无法连接后端服务，请确认 FastAPI 已启动在 http://localhost:8000');
+        } else {
+            alert(`请求失败: ${error.message}`);
+        }
+        throw error;
+    }
+}
+
+function mapBasicSchemeFromBackend(scheme) {
+    return {
+        savings: scheme.energy_savings.toFixed(1),
+        money: scheme.money_saved.toFixed(2),
+        loss: scheme.production_loss.toFixed(3),
+        lossRate: scheme.loss_rate.toFixed(2) + '%',
+        carbonReduction: scheme.carbon_reduction.toFixed(2),
+        netProfit: scheme.net_profit.toFixed(2)
+    };
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    if (tab === 'basic') {
+        document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+        document.getElementById('tab-basic').classList.add('active');
+        document.getElementById('basic-results').style.display = basicResultsCalculated ? 'block' : 'none';
+        document.getElementById('advanced-results').style.display = 'none';
+    } else {
+        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+        document.getElementById('tab-advanced').classList.add('active');
+        document.getElementById('advanced-results').style.display = advancedResultsCalculated ? 'block' : 'none';
+        document.getElementById('basic-results').style.display = 'none';
+    }
+}
+
+function evaluateExpression(expression) {
+    try {
+        const cleaned = expression.replace(/\s/g, '');
+        const result = eval(cleaned);
+        if (isNaN(result)) return null;
+        return result;
+    } catch (e) {
+        return null;
+    }
+}
+
+function getInputValue(id) {
+    const input = document.getElementById(id);
+    if (!input) return null;
+    const val = input.value.trim();
+    if (!val) return null;
+    if (val.includes('+') || val.includes('-') || val.includes('*') || val.includes('/')) {
+        const result = evaluateExpression(val);
+        if (result === null || result <= 0) return null;
+        return result;
+    }
+    const num = parseFloat(val);
+    if (isNaN(num) || num <= 0) return null;
+    return num;
+}
+
+function getDailyOutput() {
+    const outputValue = document.getElementById('outputValue').value.trim();
+    const outputUnit = document.getElementById('outputUnit').value;
+    if (!outputValue) { alert('油井产量不能为空！'); return null; }
+    let value;
+    if (outputValue.includes('+') || outputValue.includes('-') || outputValue.includes('*') || outputValue.includes('/')) {
+        value = evaluateExpression(outputValue);
+        if (value === null) { alert('产量输入表达式有误！'); return null; }
+    } else {
+        value = parseFloat(outputValue);
+        if (isNaN(value)) { alert('油井产量数值有误！'); return null; }
+    }
+    if (value <= 0) { alert('油井产量必须大于0！'); return null; }
+    if (outputUnit === 'day') return value;
+    else if (outputUnit === 'month') return value / 30;
+    else if (outputUnit === 'year') return value / 365;
+    return null;
+}
+
+function clearBest(type = 'advanced') {
+    if (type === 'basic') {
+        document.querySelectorAll('.basic-result-card').forEach(card => card.classList.remove('best'));
+    } else {
+        document.querySelectorAll('.result-card').forEach(card => card.classList.remove('best'));
+    }
+}
+
+function setBest(bestId, type = 'advanced') {
+    if (type === 'basic') {
+        const card = document.getElementById(bestId);
+        if (card) card.classList.add('best');
+    } else {
+        const card = document.getElementById(bestId);
+        if (card) card.classList.add('best');
+    }
+}
+
+async function calculateBasic() {
+    document.getElementById("loadingPage").style.display = "flex";
+    document.getElementById("loadingStep").textContent = "收集单井参数...";
+    await new Promise(r => setTimeout(r, 300));
+
+    const power = getInputValue('power');
+    const outputValueRaw = document.getElementById('outputValue').value.trim();
+    const outputUnit = document.getElementById('outputUnit').value;
+    const electricityPrice = getInputValue('electricityPrice');
+    const oilPrice = getInputValue('oilPrice');
+    const maxLossRatio = getInputValue('maxLossRatio');
+
+    if (power === null || !outputValueRaw || electricityPrice === null || oilPrice === null || maxLossRatio === null) {
+        if (!outputValueRaw) alert('油井产量不能为空！');
+        document.getElementById("loadingPage").style.display = "none";
+        return;
+    }
+
+    document.getElementById("loadingStep").textContent = "调用后端计算...";
+    await new Promise(r => setTimeout(r, 200));
+
+    let outputValue;
+    if (outputValueRaw.includes('+') || outputValueRaw.includes('-') || outputValueRaw.includes('*') || outputValueRaw.includes('/')) {
+        outputValue = evaluateExpression(outputValueRaw);
+        if (outputValue === null) {
+            alert('产量输入表达式有误！');
+            document.getElementById("loadingPage").style.display = "none";
+            return;
+        }
+    } else {
+        outputValue = parseFloat(outputValueRaw);
+        if (isNaN(outputValue)) {
+            alert('油井产量数值有误！');
+            document.getElementById("loadingPage").style.display = "none";
+            return;
+        }
+    }
+    if (outputValue <= 0) {
+        alert('油井产量必须大于0！');
+        document.getElementById("loadingPage").style.display = "none";
+        return;
+    }
+
+    try {
+        const response = await requestBackend('/api/basic/calculate', {
+            power: power,
+            output_value: outputValue,
+            output_unit: outputUnit,
+            electricity_price: electricityPrice,
+            oil_price: oilPrice,
+            max_loss_ratio: maxLossRatio
+        });
+
+        document.getElementById("loadingStep").textContent = "分析最优方案...";
+        await new Promise(r => setTimeout(r, 200));
+
+        const energyPlan = mapBasicSchemeFromBackend(response.schemes.energy);
+        const productionPlan = mapBasicSchemeFromBackend(response.schemes.production);
+        const balancedPlan = mapBasicSchemeFromBackend(response.schemes.balanced);
+
+        clearBest('basic');
+        
+        let bestId = response.best_scheme;
+        if (bestId === 'energy') setBest('basic-card-energy', 'basic');
+        else if (bestId === 'production') setBest('basic-card-production', 'basic');
+        else if (bestId === 'balanced') setBest('basic-card-balanced', 'basic');
+        else {
+            const e = parseFloat(energyPlan.netProfit);
+            const p = parseFloat(productionPlan.netProfit);
+            const b = parseFloat(balancedPlan.netProfit);
+            const max = Math.max(e, p, b);
+            if (max === e) setBest('basic-card-energy', 'basic');
+            if (max === p) setBest('basic-card-production', 'basic');
+            if (max === b) setBest('basic-card-balanced', 'basic');
+        }
+
+        displayBasicResults(energyPlan, productionPlan, balancedPlan);
+        renderBasicComparisonChart(energyPlan, productionPlan, balancedPlan);
+        
+        basicResultsCalculated = true;
+        document.getElementById('advanced-results').style.display = 'none';
+        document.getElementById('basic-results').style.display = 'block';
+        document.getElementById('basic-results').scrollIntoView({ behavior: 'smooth' });
+
+        await new Promise(r => setTimeout(r, 500));
+        document.getElementById("loadingPage").style.display = "none";
+        saveBasicToHistory(energyPlan, productionPlan, balancedPlan);
+        showToast('计算完成！已生成最优节能方案');
+        
+    } catch (error) {
+        document.getElementById("loadingPage").style.display = "none";
+        console.error('计算失败:', error);
+    }
+}
+
+function calculateEnergyPriority(power, dailyOutput, electricityPrice, oilPrice, maxAllowedLoss) {
+    const productionLoss = maxAllowedLoss;
+    const lossHours = productionLoss / (dailyOutput / 24);
+    const energySavings = power * lossHours;
+    const moneySaved = energySavings * electricityPrice;
+    const lossValue = productionLoss * oilPrice;
+    const netProfit = moneySaved - lossValue;
+    const lossRate = (productionLoss / dailyOutput * 100).toFixed(2);
+    const carbonReduction = (energySavings * 0.6).toFixed(2);
+    return {
+        savings: energySavings.toFixed(1),
+        money: moneySaved.toFixed(2),
+        loss: productionLoss.toFixed(3),
+        lossRate: lossRate + '%',
+        carbonReduction: carbonReduction,
+        netProfit: netProfit.toFixed(2)
+    };
+}
+
+function calculateProductionPriority(power, dailyOutput, electricityPrice, oilPrice) {
+    const productionLoss = dailyOutput * 0.001;
+    const lossHours = productionLoss / (dailyOutput / 24);
+    const energySavings = power * lossHours * 0.5;
+    const moneySaved = energySavings * electricityPrice;
+    const lossValue = productionLoss * oilPrice;
+    const netProfit = moneySaved - lossValue;
+    const lossRate = (productionLoss / dailyOutput * 100).toFixed(2);
+    const carbonReduction = (energySavings * 0.6).toFixed(2);
+    return {
+        savings: energySavings.toFixed(1),
+        money: moneySaved.toFixed(2),
+        loss: productionLoss.toFixed(3),
+        lossRate: lossRate + '%',
+        carbonReduction: carbonReduction,
+        netProfit: netProfit.toFixed(2)
+    };
+}
+
+function calculateBalancedPriority(power, dailyOutput, electricityPrice, oilPrice, maxAllowedLoss) {
+    let bestPlan = null;
+    let maxNetProfit = -Infinity;
+    const maxLossRatio = maxAllowedLoss / dailyOutput;
+    for (let lossRatio = 0; lossRatio <= maxLossRatio; lossRatio += 0.005) {
+        const productionLoss = dailyOutput * lossRatio;
+        const lossHours = productionLoss / (dailyOutput / 24);
+        const energySavings = power * lossHours;
+        const moneySaved = energySavings * electricityPrice;
+        const lossValue = productionLoss * oilPrice;
+        const netProfit = moneySaved - lossValue;
+        if (netProfit > maxNetProfit) {
+            maxNetProfit = netProfit;
+            bestPlan = {
+                savings: energySavings,
+                money: moneySaved,
+                loss: productionLoss,
+                lossRatio: lossRatio,
+                carbonReduction: energySavings * 0.6
+            };
+        }
+    }
+    return {
+        savings: bestPlan.savings.toFixed(1),
+        money: bestPlan.money.toFixed(2),
+        loss: bestPlan.loss.toFixed(3),
+        lossRate: (bestPlan.lossRatio * 100).toFixed(2) + '%',
+        carbonReduction: bestPlan.carbonReduction.toFixed(2),
+        netProfit: maxNetProfit.toFixed(2)
+    };
+}
+
+function displayBasicResults(energy, production, balanced) {
+    document.getElementById('basic-energy-savings').textContent = energy.savings + ' kWh';
+    document.getElementById('basic-energy-money').textContent = energy.money + ' 元';
+    document.getElementById('basic-energy-loss').textContent = energy.loss + ' 吨';
+    document.getElementById('basic-energy-lossrate').textContent = energy.lossRate;
+    document.getElementById('basic-energy-carbon').textContent = energy.carbonReduction + ' kg';
+    const ep1 = document.getElementById('basic-energy-profit');
+    ep1.textContent = energy.netProfit + ' 元';
+    ep1.className = 'value' + (parseFloat(energy.netProfit) < 0 ? ' negative' : '');
+
+    document.getElementById('basic-benefit-savings').textContent = production.savings + ' kWh';
+    document.getElementById('basic-benefit-money').textContent = production.money + ' 元';
+    document.getElementById('basic-benefit-loss').textContent = production.loss + ' 吨';
+    document.getElementById('basic-benefit-lossrate').textContent = production.lossRate;
+    document.getElementById('basic-benefit-carbon').textContent = production.carbonReduction + ' kg';
+    const ep2 = document.getElementById('basic-benefit-profit');
+    ep2.textContent = production.netProfit + ' 元';
+    ep2.className = 'value' + (parseFloat(production.netProfit) < 0 ? ' negative' : '');
+
+    document.getElementById('basic-balanced-savings').textContent = balanced.savings + ' kWh';
+    document.getElementById('basic-balanced-money').textContent = balanced.money + ' 元';
+    document.getElementById('basic-balanced-loss').textContent = balanced.loss + ' 吨';
+    document.getElementById('basic-balanced-lossrate').textContent = balanced.lossRate;
+    document.getElementById('basic-balanced-carbon').textContent = balanced.carbonReduction + ' kg';
+    const ep3 = document.getElementById('basic-balanced-profit');
+    ep3.textContent = balanced.netProfit + ' 元';
+    ep3.className = 'value' + (parseFloat(balanced.netProfit) < 0 ? ' negative' : '');
+}
+
+function renderBasicComparisonChart(energy, production, balanced) {
+    const chartDom = document.getElementById('basicComparisonChart');
+    if (chartInstances.basicComparison) chartInstances.basicComparison.dispose();
+    chartInstances.basicComparison = echarts.init(chartDom);
+
+    const option = {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#e94560', textStyle: { color: '#fff' } },
+        legend: { data: ['节能优先', '保产优先', '平衡方案'], bottom: 0, textStyle: { color: '#fff' } },
+        grid: { left: '5%', right: '5%', bottom: '15%', top: '5%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: ['节电量(kWh)', '电费节省(元)', '碳减排(kg)', '净收益(元)'], 
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, 
+            axisLabel: { color: '#fff', rotate: 30 } 
+        },
+        yAxis: { 
+            type: 'value', 
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, 
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, 
+            axisLabel: { color: '#fff' } 
+        },
+        series: [
+            { 
+                name: '节能优先', 
+                type: 'bar', 
+                data: [parseFloat(energy.savings), parseFloat(energy.money), parseFloat(energy.carbonReduction), parseFloat(energy.netProfit)], 
+                itemStyle: { color: '#00ff88' } 
+            },
+            { 
+                name: '保产优先', 
+                type: 'bar', 
+                data: [parseFloat(production.savings), parseFloat(production.money), parseFloat(production.carbonReduction), parseFloat(production.netProfit)], 
+                itemStyle: { color: '#00d9ff' } 
+            },
+            { 
+                name: '平衡方案', 
+                type: 'bar', 
+                data: [parseFloat(balanced.savings), parseFloat(balanced.money), parseFloat(balanced.carbonReduction), parseFloat(balanced.netProfit)], 
+                itemStyle: { color: '#ffd700' } 
+            }
+        ]
+    };
+
+    chartInstances.basicComparison.setOption(option);
+}
+
+function getWellParams() {
+    const wells = [];
+    for (let i = 1; i <= 6; i++) {
+        wells.push({
+            id: i,
+            P_rated: parseFloat(document.getElementById(`w${i}_power`).value) || 30,
+            q_rate: parseFloat(document.getElementById(`w${i}_qrate`).value) || 0.5,
+            c_start: parseFloat(document.getElementById(`w${i}_cost`).value) || 100,
+            H_min: parseInt(document.getElementById(`w${i}_hmin`).value) || 4,
+            H_max: parseInt(document.getElementById(`w${i}_hmax`).value) || 20
+        });
+    }
+    return wells;
+}
+
+function solveMILP(wells, params, weights) {
+    const I = 6;
+    const T = 24;
+    const { P_rated, q_rate, e_rate, c_start, H_min, H_max, oil_price, gamma, epsilon, Q_min, P_max, daily_carbon_limit } = params;
+    
+    const w1 = weights[0], w2 = weights[1], w3 = weights[2];
+    
+    let bestSchedule = [];
+    let bestResults = null;
+    let maxScore = -Infinity;
+    
+    const maxIterations = 2000;
+    let iterations = 0;
+    
+    for (let attempt = 0; attempt < maxIterations; attempt++) {
+        iterations++;
+        const schedule = generateHeuristicSchedule(wells, params, attempt);
+        if (!validateConstraints(schedule, wells, params)) continue;
+        
+        const results = evaluateSchedule(schedule, wells, params);
+        if (!results) continue;
+        
+        const score = w1 * (1 - results.total_energy / 2000) + 
+                      w2 * (1 - results.total_emission / 1000) + 
+                      w3 * (results.profit / 50000 + 1);
+        
+        if (score > maxScore) {
+            maxScore = score;
+            bestSchedule = schedule.map(row => [...row]);
+            bestResults = { ...results };
+        }
+        
+        if (iterations >= maxIterations) break;
+    }
+    
+    if (bestResults) {
+        bestResults.load_profile = [];
+        for (let t = 0; t < T; t++) {
+            let load = 0;
+            for (let i = 0; i < I; i++) {
+                load += P_rated[i] * bestSchedule[i][t];
+            }
+            bestResults.load_profile.push(load);
+        }
+        bestResults.peak_load = Math.max(...bestResults.load_profile);
+        bestResults.total_startups = countStartups(bestSchedule);
+    }
+    
+    return { schedule: bestSchedule, results: bestResults };
+}
+
+function generateHeuristicSchedule(wells, params, seed) {
+    const I = 6, T = 24;
+    const { P_rated, q_rate, H_min, H_max, epsilon, P_max, mutex_pairs } = params;
+    
+    const schedule = Array(I).fill(null).map(() => Array(T).fill(0));
+    const used = Array(I).fill(false);
+    
+    const sortedWells = [...wells].sort((a, b) => {
+        if (seed % 3 === 0) return b.q_rate - a.q_rate;
+        if (seed % 3 === 1) return a.P_rated - b.P_rated;
+        return 0;
+    });
+    
+    for (let t = 0; t < T; t++) {
+        let currentLoad = 0;
+        for (let i = 0; i < I; i++) {
+            if (schedule[i][t] === 1) {
+                currentLoad += P_rated[i];
+            }
+        }
+        
+        for (let wi = 0; wi < sortedWells.length; wi++) {
+            const i = sortedWells[wi].id - 1;
+            if (used[i]) continue;
+            
+            const canStart = P_rated[i] + currentLoad <= P_max;
+            const isMutex = mutex_pairs.some(pair => 
+                (pair[0] === i + 1 || pair[1] === i + 1) &&
+                schedule[pair[0] - 1][t] === 1
+            );
+            
+            const nightNoise = (t >= 22 || t < 6) && [2, 5].includes(i);
+            const stormHour = [12, 13].includes(t + 1);
+            
+            if (canStart && !isMutex && !nightNoise && !stormHour) {
+                if (Math.random() > 0.4) {
+                    schedule[i][t] = 1;
+                    currentLoad += P_rated[i];
+                    used[i] = true;
+                    
+                    let runLength = 2 + Math.floor(Math.random() * 4);
+                    for (let dt = 1; dt < runLength && t + dt < T; dt++) {
+                        if (P_rated[i] + currentLoad <= P_max) {
+                            schedule[i][t + dt] = 1;
+                            currentLoad += P_rated[i];
+                        } else break;
+                    }
+                }
+            }
+        }
+    }
+    
+    for (let i = 0; i < I; i++) {
+        let runTime = schedule[i].filter(v => v === 1).length;
+        if (runTime < H_min[i]) {
+            const startIdx = Math.floor(Math.random() * (T - H_min[i]));
+            for (let t = startIdx; t < startIdx + H_min[i] && t < T; t++) {
+                schedule[i][t] = 1;
+            }
+        }
+        if (runTime > H_max[i]) {
+            const indices = [];
+            for (let t = 0; t < T; t++) if (schedule[i][t] === 1) indices.push(t);
+            for (let j = H_max[i]; j < indices.length; j++) {
+                schedule[i][indices[j]] = 0;
+            }
+        }
+    }
+    
+    return schedule;
+}
+
+function validateConstraints(schedule, wells, params) {
+    const I = 6, T = 24;
+    const { P_rated, q_rate, H_min, H_max, Q_min, P_max, epsilon, daily_carbon_limit, gamma, peak_hours, mutex_pairs, night_hours, noisy_wells, storm_hours, max_running_during_storm, L_on, L_off } = params;
+    
+    let totalOil = 0;
+    for (let i = 0; i < I; i++) {
+        for (let t = 0; t < T; t++) {
+            if (schedule[i][t] === 1) {
+                totalOil += q_rate[i];
+                
+                let runTime = 0;
+                for (let tt = 0; tt < T; tt++) if (schedule[i][tt] === 1) runTime++;
+                if (runTime < H_min[i] || runTime > H_max[i]) return false;
+            }
+        }
+    }
+    if (totalOil < Q_min) return false;
+    
+    for (let t = 0; t < T; t++) {
+        let load = 0;
+        for (let i = 0; i < I; i++) {
+            if (schedule[i][t] === 1) load += P_rated[i];
+        }
+        if (load > P_max) return false;
+    }
+    
+    for (const pair of mutex_pairs) {
+        for (let t = 0; t < T; t++) {
+            if (schedule[pair[0] - 1][t] === 1 && schedule[pair[1] - 1][t] === 1) return false;
+        }
+    }
+    
+    for (const ni of noisy_wells) {
+        for (const nt of night_hours) {
+            if (schedule[ni - 1][nt - 1] === 1) return false;
+        }
+    }
+    
+    for (const st of storm_hours) {
+        let count = 0;
+        for (let i = 0; i < I; i++) {
+            if (schedule[i][st - 1] === 1) count++;
+        }
+        if (count > max_running_during_storm) return false;
+    }
+    
+    let totalEnergy = 0;
+    for (let i = 0; i < I; i++) {
+        for (let t = 0; t < T; t++) {
+            if (schedule[i][t] === 1) totalEnergy += P_rated[i];
+        }
+    }
+    if (totalEnergy * gamma > daily_carbon_limit) return false;
+    
+    let peakCost = 0, totalCost = 0;
+    for (let t = 0; t < T; t++) {
+        let hourlyCost = 0;
+        for (let i = 0; i < I; i++) {
+            if (schedule[i][t] === 1) hourlyCost += epsilon[t] * P_rated[i];
+        }
+        totalCost += hourlyCost;
+        if (peak_hours.includes(t + 1)) peakCost += hourlyCost;
+    }
+    if (totalCost > 0 && peakCost / totalCost > 0.8) return false;
+    
+    for (let i = 0; i < I; i++) {
+        for (let t = 0; t < T - L_on + 1; t++) {
+            let sum = 0;
+            for (let dt = 0; dt < L_on; dt++) sum += schedule[i][t + dt];
+            if (sum === L_on && schedule[i][t] === 0) return false;
+        }
+    }
+    
+    return true;
+}
+
+function evaluateSchedule(schedule, wells, params) {
+    const I = 6, T = 24;
+    const { P_rated, q_rate, e_rate, c_start, oil_price, gamma, epsilon, peak_hours } = params;
+    
+    let total_energy = 0, total_oil = 0, total_startup = 0, total_cost = 0, peak_cost = 0, flat_cost = 0, valley_cost = 0;
+    
+    for (let i = 0; i < I; i++) {
+        for (let t = 0; t < T; t++) {
+            if (schedule[i][t] === 1) {
+                total_energy += e_rate[i];
+                total_oil += q_rate[i];
+                total_cost += epsilon[t] * e_rate[i];
+                
+                if (peak_hours.includes(t + 1)) peak_cost += epsilon[t] * e_rate[i];
+                else if ([12, 13, 14, 15, 16, 17, 18, 22, 23, 24].includes(t + 1)) flat_cost += epsilon[t] * e_rate[i];
+                else valley_cost += epsilon[t] * e_rate[i];
+            }
+            if (t > 0 && schedule[i][t] === 1 && schedule[i][t - 1] === 0) total_startup++;
+            if (t === 0 && schedule[i][t] === 1) total_startup++;
+        }
+    }
+    
+    const total_emission = gamma * total_energy;
+    const revenue = oil_price * total_oil;
+    const profit = revenue - total_cost;
+    
+    return {
+        total_energy,
+        total_emission,
+        total_cost,
+        revenue,
+        profit,
+        total_oil,
+        peak_cost,
+        flat_cost,
+        valley_cost,
+        total_startups: total_startup
+    };
+}
+
+function countStartups(schedule) {
+    let startups = 0;
+    for (let i = 0; i < schedule.length; i++) {
+        for (let t = 0; t < schedule[0].length; t++) {
+            if (t === 0 && schedule[i][t] === 1) startups++;
+            else if (t > 0 && schedule[i][t] === 1 && schedule[i][t - 1] === 0) startups++;
+        }
+    }
+    return startups;
+}
+
+async function calculateAdvanced() {
+    document.getElementById("loadingPage").style.display = "flex";
+    document.getElementById("loadingStep").textContent = "收集井群参数...";
+    await new Promise(r => setTimeout(r, 300));
+
+    const wells = getWellParams();
+    
+    const oil_price = parseFloat(document.getElementById('adv_oil_price').value) || 3500;
+    const carbon_factor = parseFloat(document.getElementById('adv_carbon_factor').value) || 0.5;
+    const transformer_max = parseFloat(document.getElementById('adv_transformer_max').value) || 250;
+    const q_min = parseFloat(document.getElementById('adv_q_min').value) || 20;
+    const peak_price = parseFloat(document.getElementById('adv_peak_price').value) || 0.8225;
+    const flat_price = parseFloat(document.getElementById('adv_flat_price').value) || 0.6277;
+    const valley_price = parseFloat(document.getElementById('adv_valley_price').value) || 0.4329;
+    const daily_carbon_limit = parseFloat(document.getElementById('adv_carbon_limit').value) || 1500;
+
+    document.getElementById("loadingStep").textContent = "调用后端优化计算...";
+    await new Promise(r => setTimeout(r, 200));
+
+    try {
+        const requestWells = wells.map((w, index) => ({
+            id: `W0${index + 1}`,
+            power: w.P_rated,
+            q_rate: w.q_rate,
+            startup_cost: w.c_start,
+            h_min: w.H_min,
+            h_max: w.H_max
+        }));
+
+        const response = await requestBackend('/api/advanced/optimize', {
+            wells: requestWells,
+            params: {
+                oil_price: oil_price,
+                carbon_factor: carbon_factor,
+                transformer_max: transformer_max,
+                q_min: q_min,
+                peak_price: peak_price,
+                flat_price: flat_price,
+                valley_price: valley_price,
+                daily_carbon_limit: daily_carbon_limit
+            }
+        });
+
+        document.getElementById("loadingStep").textContent = "处理优化结果...";
+        await new Promise(r => setTimeout(r, 200));
+
+        const mapAdvancedScheme = (scheme) => ({
+            total_energy: scheme.total_energy,
+            total_emission: scheme.total_emission,
+            total_cost: scheme.total_cost,
+            revenue: scheme.revenue,
+            profit: scheme.profit,
+            total_oil: scheme.total_oil,
+            peak_load: scheme.peak_load,
+            total_startups: scheme.total_startups,
+            load_profile: scheme.load_profile
+        });
+
+        globalAdvancedResults.energy = mapAdvancedScheme(response.schemes.energy);
+        globalAdvancedResults.benefit = mapAdvancedScheme(response.schemes.benefit);
+        globalAdvancedResults.balanced = mapAdvancedScheme(response.schemes.balanced);
+        globalAdvancedResults.schedules = {
+            energy: response.schemes.energy.schedule,
+            benefit: response.schemes.benefit.schedule,
+            balanced: response.schemes.balanced.schedule
+        };
+
+        document.getElementById("loadingStep").textContent = "分析最优方案...";
+        await new Promise(r => setTimeout(r, 200));
+
+        clearBest();
+        
+        let bestId = response.best_scheme;
+        if (bestId === 'energy') setBest('card-energy');
+        else if (bestId === 'benefit') setBest('card-production');
+        else if (bestId === 'balanced') setBest('card-balanced');
+        else {
+            const e = globalAdvancedResults.energy ? globalAdvancedResults.energy.profit : -Infinity;
+            const b = globalAdvancedResults.benefit ? globalAdvancedResults.benefit.profit : -Infinity;
+            const bal = globalAdvancedResults.balanced ? globalAdvancedResults.balanced.profit : -Infinity;
+            const max = Math.max(e, b, bal);
+            if (max === e) setBest('card-energy');
+            if (max === b) setBest('card-production');
+            if (max === bal) setBest('card-balanced');
+        }
+
+        displayAdvancedResults();
+        renderAdvancedCharts();
+        
+        advancedResultsCalculated = true;
+        document.getElementById('basic-results').style.display = 'none';
+        document.getElementById('advanced-results').style.display = 'block';
+        document.getElementById('advanced-results').scrollIntoView({ behavior: 'smooth' });
+
+        await new Promise(r => setTimeout(r, 500));
+        document.getElementById("loadingPage").style.display = "none";
+        saveAdvancedToHistory();
+        showToast('井群优化完成！已生成最优调度方案');
+        
+    } catch (error) {
+        document.getElementById("loadingPage").style.display = "none";
+        console.error('计算失败:', error);
+    }
+}
+
+function displayAdvancedResults() {
+    if (globalAdvancedResults.energy) {
+        document.getElementById('adv-energy-consumption').textContent = globalAdvancedResults.energy.total_energy.toFixed(0) + ' kWh';
+        document.getElementById('adv-energy-emission').textContent = globalAdvancedResults.energy.total_emission.toFixed(0) + ' kg';
+        document.getElementById('adv-energy-cost').textContent = globalAdvancedResults.energy.total_cost.toFixed(2) + ' 元';
+        document.getElementById('adv-energy-revenue').textContent = globalAdvancedResults.energy.revenue.toFixed(2) + ' 元';
+        const epEl = document.getElementById('adv-energy-profit');
+        epEl.textContent = globalAdvancedResults.energy.profit.toFixed(2) + ' 元';
+        epEl.className = 'value' + (globalAdvancedResults.energy.profit < 0 ? ' negative' : '');
+        document.getElementById('adv-energy-oil').textContent = globalAdvancedResults.energy.total_oil.toFixed(2) + ' m³';
+        document.getElementById('adv-energy-peakload').textContent = (globalAdvancedResults.energy.peak_load || 0).toFixed(0) + ' kW';
+        document.getElementById('adv-energy-startups').textContent = globalAdvancedResults.energy.total_startups + ' 次';
+    }
+
+    if (globalAdvancedResults.benefit) {
+        document.getElementById('adv-benefit-consumption').textContent = globalAdvancedResults.benefit.total_energy.toFixed(0) + ' kWh';
+        document.getElementById('adv-benefit-emission').textContent = globalAdvancedResults.benefit.total_emission.toFixed(0) + ' kg';
+        document.getElementById('adv-benefit-cost').textContent = globalAdvancedResults.benefit.total_cost.toFixed(2) + ' 元';
+        document.getElementById('adv-benefit-revenue').textContent = globalAdvancedResults.benefit.revenue.toFixed(2) + ' 元';
+        const bpEl = document.getElementById('adv-benefit-profit');
+        bpEl.textContent = globalAdvancedResults.benefit.profit.toFixed(2) + ' 元';
+        bpEl.className = 'value' + (globalAdvancedResults.benefit.profit < 0 ? ' negative' : '');
+        document.getElementById('adv-benefit-oil').textContent = globalAdvancedResults.benefit.total_oil.toFixed(2) + ' m³';
+        document.getElementById('adv-benefit-peakload').textContent = (globalAdvancedResults.benefit.peak_load || 0).toFixed(0) + ' kW';
+        document.getElementById('adv-benefit-startups').textContent = globalAdvancedResults.benefit.total_startups + ' 次';
+    }
+
+    if (globalAdvancedResults.balanced) {
+        document.getElementById('adv-balanced-consumption').textContent = globalAdvancedResults.balanced.total_energy.toFixed(0) + ' kWh';
+        document.getElementById('adv-balanced-emission').textContent = globalAdvancedResults.balanced.total_emission.toFixed(0) + ' kg';
+        document.getElementById('adv-balanced-cost').textContent = globalAdvancedResults.balanced.total_cost.toFixed(2) + ' 元';
+        document.getElementById('adv-balanced-revenue').textContent = globalAdvancedResults.balanced.revenue.toFixed(2) + ' 元';
+        const balEl = document.getElementById('adv-balanced-profit');
+        balEl.textContent = globalAdvancedResults.balanced.profit.toFixed(2) + ' 元';
+        balEl.className = 'value' + (globalAdvancedResults.balanced.profit < 0 ? ' negative' : '');
+        document.getElementById('adv-balanced-oil').textContent = globalAdvancedResults.balanced.total_oil.toFixed(2) + ' m³';
+        document.getElementById('adv-balanced-peakload').textContent = (globalAdvancedResults.balanced.peak_load || 0).toFixed(0) + ' kW';
+        document.getElementById('adv-balanced-startups').textContent = globalAdvancedResults.balanced.total_startups + ' 次';
+    }
+}
+
+function renderAdvancedCharts() {
+    renderLoadCurveChart();
+    renderHeatmapChart();
+    renderRadarChart();
+    renderComparisonChart();
+}
+
+function renderLoadCurveChart() {
+    const chartDom = document.getElementById('loadCurveChart');
+    if (chartInstances.loadCurve) chartInstances.loadCurve.dispose();
+    chartInstances.loadCurve = echarts.init(chartDom);
+
+    const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+    const series = [];
+
+    if (globalAdvancedResults.energy && globalAdvancedResults.energy.load_profile) {
+        series.push({
+            name: '节能优先',
+            type: 'line',
+            data: globalAdvancedResults.energy.load_profile,
+            smooth: true,
+            lineStyle: { width: 2, color: '#00d9ff' },
+            itemStyle: { color: '#00d9ff' }
+        });
+    }
+    if (globalAdvancedResults.benefit && globalAdvancedResults.benefit.load_profile) {
+        series.push({
+            name: '效益最高',
+            type: 'line',
+            data: globalAdvancedResults.benefit.load_profile,
+            smooth: true,
+            lineStyle: { width: 2, color: '#00ff88' },
+            itemStyle: { color: '#00ff88' }
+        });
+    }
+    if (globalAdvancedResults.balanced && globalAdvancedResults.balanced.load_profile) {
+        series.push({
+            name: '平衡方案',
+            type: 'line',
+            data: globalAdvancedResults.balanced.load_profile,
+            smooth: true,
+            lineStyle: { width: 2, color: '#ffd700' },
+            itemStyle: { color: '#ffd700' }
+        });
+    }
+
+    const option = {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#e94560', textStyle: { color: '#fff' } },
+        legend: { data: ['节能优先', '效益最高', '平衡方案'], bottom: 0, textStyle: { color: '#fff' } },
+        grid: { left: '5%', right: '5%', bottom: '15%', top: '5%', containLabel: true },
+        xAxis: { type: 'category', data: hours, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, axisLabel: { color: '#fff', rotate: 45 } },
+        yAxis: { type: 'value', name: '负荷(kW)', axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { color: '#fff' } },
+        series
+    };
+
+    chartInstances.loadCurve.setOption(option);
+}
+
+function renderHeatmapChart() {
+    const chartDom = document.getElementById('heatmapChart');
+    if (chartInstances.heatmap) chartInstances.heatmap.dispose();
+    chartInstances.heatmap = echarts.init(chartDom);
+
+    const wellNames = ['W01', 'W02', 'W03', 'W04', 'W05', 'W06'];
+    const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+    
+    const combinedSchedule = globalAdvancedResults.schedules?.balanced || globalAdvancedResults.schedules?.energy || [];
+    const heatmapData = [];
+    
+    for (let i = 0; i < 6; i++) {
+        for (let t = 0; t < 24; t++) {
+            heatmapData.push([t, i, combinedSchedule[i] ? combinedSchedule[i][t] : 0]);
+        }
+    }
+
+    const option = {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        tooltip: { position: 'top', formatter: (p) => `${wellNames[p.value[1]]} ${p.value[0]}:00 - ${p.value[2] === 1 ? '运行' : '停机'}` },
+        grid: { left: '10%', right: '5%', top: '5%', bottom: '20%' },
+        xAxis: { type: 'category', data: hours, splitArea: { show: true }, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } }, axisLabel: { color: '#fff', rotate: 45, interval: 2 } },
+        yAxis: { type: 'category', data: wellNames, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } }, axisLabel: { color: '#fff' } },
+        visualMap: { min: 0, max: 1, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%', inRange: { color: ['#ffffff', '#00d9ff'] }, textStyle: { color: '#fff' } },
+        series: [{ name: '运行状态', type: 'heatmap', data: heatmapData, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } } }]
+    };
+
+    chartInstances.heatmap.setOption(option);
+}
+
+function renderRadarChart() {
+    const chartDom = document.getElementById('radarChart');
+    if (chartInstances.radar) chartInstances.radar.dispose();
+    chartInstances.radar = echarts.init(chartDom);
+
+    const maxEnergy = Math.max(
+        globalAdvancedResults.energy?.total_energy || 1,
+        globalAdvancedResults.benefit?.total_energy || 1,
+        globalAdvancedResults.balanced?.total_energy || 1
+    );
+    const maxProfit = Math.max(
+        Math.abs(globalAdvancedResults.energy?.profit || 1),
+        Math.abs(globalAdvancedResults.benefit?.profit || 1),
+        Math.abs(globalAdvancedResults.balanced?.profit || 1)
+    );
+    const maxOil = Math.max(
+        globalAdvancedResults.energy?.total_oil || 1,
+        globalAdvancedResults.benefit?.total_oil || 1,
+        globalAdvancedResults.balanced?.total_oil || 1
+    );
+    const maxStartups = Math.max(
+        globalAdvancedResults.energy?.total_startups || 1,
+        globalAdvancedResults.benefit?.total_startups || 1,
+        globalAdvancedResults.balanced?.total_startups || 1
+    );
+
+    const option = {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#e94560', textStyle: { color: '#fff' } },
+        legend: { data: ['节能优先', '效益最高', '平衡方案'], bottom: 0, textStyle: { color: '#fff' } },
+        radar: {
+            indicator: [
+                { name: '能耗(低好)', max: maxEnergy },
+                { name: '利润(高好)', max: maxProfit },
+                { name: '产量(高好)', max: maxOil },
+                { name: '启停(少好)', max: maxStartups }
+            ],
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+            splitArea: { areaStyle: { color: ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.05)'] } },
+            name: { textStyle: { color: '#fff' } }
+        },
+        series: [{
+            type: 'radar',
+            data: [
+                {
+                    name: '节能优先',
+                    value: [
+                        globalAdvancedResults.energy?.total_energy || 0,
+                        Math.abs(globalAdvancedResults.energy?.profit || 0),
+                        globalAdvancedResults.energy?.total_oil || 0,
+                        globalAdvancedResults.energy?.total_startups || 0
+                    ],
+                    lineStyle: { color: '#00d9ff' },
+                    areaStyle: { color: 'rgba(0,217,255,0.3)' },
+                    itemStyle: { color: '#00d9ff' }
+                },
+                {
+                    name: '效益最高',
+                    value: [
+                        globalAdvancedResults.benefit?.total_energy || 0,
+                        Math.abs(globalAdvancedResults.benefit?.profit || 0),
+                        globalAdvancedResults.benefit?.total_oil || 0,
+                        globalAdvancedResults.benefit?.total_startups || 0
+                    ],
+                    lineStyle: { color: '#00ff88' },
+                    areaStyle: { color: 'rgba(0,255,136,0.3)' },
+                    itemStyle: { color: '#00ff88' }
+                },
+                {
+                    name: '平衡方案',
+                    value: [
+                        globalAdvancedResults.balanced?.total_energy || 0,
+                        Math.abs(globalAdvancedResults.balanced?.profit || 0),
+                        globalAdvancedResults.balanced?.total_oil || 0,
+                        globalAdvancedResults.balanced?.total_startups || 0
+                    ],
+                    lineStyle: { color: '#ffd700' },
+                    areaStyle: { color: 'rgba(255,215,0,0.3)' },
+                    itemStyle: { color: '#ffd700' }
+                }
+            ]
+        }]
+    };
+
+    chartInstances.radar.setOption(option);
+}
+
+function renderComparisonChart() {
+    const chartDom = document.getElementById('comparisonChart');
+    if (chartInstances.comparison) chartInstances.comparison.dispose();
+    chartInstances.comparison = echarts.init(chartDom);
+
+    const categories = ['总能耗(kWh)', '碳排放(kg)', '总成本(元)', '净利润(元)', '总产量(m³)'];
+    
+    const energyData = globalAdvancedResults.energy ? [
+        globalAdvancedResults.energy.total_energy,
+        globalAdvancedResults.energy.total_emission,
+        globalAdvancedResults.energy.total_cost,
+        globalAdvancedResults.energy.profit,
+        globalAdvancedResults.energy.total_oil
+    ] : [0, 0, 0, 0, 0];
+    
+    const benefitData = globalAdvancedResults.benefit ? [
+        globalAdvancedResults.benefit.total_energy,
+        globalAdvancedResults.benefit.total_emission,
+        globalAdvancedResults.benefit.total_cost,
+        globalAdvancedResults.benefit.profit,
+        globalAdvancedResults.benefit.total_oil
+    ] : [0, 0, 0, 0, 0];
+    
+    const balancedData = globalAdvancedResults.balanced ? [
+        globalAdvancedResults.balanced.total_energy,
+        globalAdvancedResults.balanced.total_emission,
+        globalAdvancedResults.balanced.total_cost,
+        globalAdvancedResults.balanced.profit,
+        globalAdvancedResults.balanced.total_oil
+    ] : [0, 0, 0, 0, 0];
+
+    const option = {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#e94560', textStyle: { color: '#fff' } },
+        legend: { data: ['节能优先', '效益最高', '平衡方案'], bottom: 0, textStyle: { color: '#fff' } },
+        grid: { left: '5%', right: '5%', bottom: '15%', top: '5%', containLabel: true },
+        xAxis: { type: 'category', data: categories, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, axisLabel: { color: '#fff', rotate: 30 } },
+        yAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(255,255,255,0.6)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { color: '#fff' } },
+        series: [
+            { name: '节能优先', type: 'bar', data: energyData, itemStyle: { color: '#00d9ff' } },
+            { name: '效益最高', type: 'bar', data: benefitData, itemStyle: { color: '#00ff88' } },
+            { name: '平衡方案', type: 'bar', data: balancedData, itemStyle: { color: '#ffd700' } }
+        ]
+    };
+
+    chartInstances.comparison.setOption(option);
+}
+
+function exportBasicResults() {
+    const energySavings = document.getElementById('basic-energy-savings').textContent;
+    const energyMoney = document.getElementById('basic-energy-money').textContent;
+    const energyLoss = document.getElementById('basic-energy-loss').textContent;
+    const energyLossRate = document.getElementById('basic-energy-lossrate').textContent;
+    const energyCarbon = document.getElementById('basic-energy-carbon').textContent;
+    const energyProfit = document.getElementById('basic-energy-profit').textContent;
+
+    const productionSavings = document.getElementById('basic-benefit-savings').textContent;
+    const productionMoney = document.getElementById('basic-benefit-money').textContent;
+    const productionLoss = document.getElementById('basic-benefit-loss').textContent;
+    const productionLossRate = document.getElementById('basic-benefit-lossrate').textContent;
+    const productionCarbon = document.getElementById('basic-benefit-carbon').textContent;
+    const productionProfit = document.getElementById('basic-benefit-profit').textContent;
+
+    const balancedSavings = document.getElementById('basic-balanced-savings').textContent;
+    const balancedMoney = document.getElementById('basic-balanced-money').textContent;
+    const balancedLoss = document.getElementById('basic-balanced-loss').textContent;
+    const balancedLossRate = document.getElementById('basic-balanced-lossrate').textContent;
+    const balancedCarbon = document.getElementById('basic-balanced-carbon').textContent;
+    const balancedProfit = document.getElementById('basic-balanced-profit').textContent;
+
+    if (energySavings === '-' || productionSavings === '-' || balancedSavings === '-') {
+        alert('暂无可导出的数据，请先完成计算！');
+        return;
+    }
+
+    const exportData = [
+        ['抽油机单井节能优化计算结果', '', '', '', '', '', ''],
+        ['计算时间', new Date().toLocaleString(), '', '', '', '', ''],
+        ['', '', '', '', '', '', ''],
+        ['输入参数', '', '', '', '', '', ''],
+        ['抽油机功率', document.getElementById('power').value + ' kW', '', '', '', '', ''],
+        ['油井产量', document.getElementById('outputValue').value + ' ' + (document.getElementById('outputUnit').value === 'day' ? '吨/天' : document.getElementById('outputUnit').value === 'month' ? '吨/月' : '吨/年'), '', '', '', '', ''],
+        ['工业电价', document.getElementById('electricityPrice').value + ' 元/度', '', '', '', '', ''],
+        ['原油价格', document.getElementById('oilPrice').value + ' 元/吨', '', '', '', '', ''],
+        ['最大允许产量损失比', document.getElementById('maxLossRatio').value + '%', '', '', '', '', ''],
+        ['', '', '', '', '', '', ''],
+        ['方案类型', '节电量(kWh)', '电费节省(元)', '产量损失(吨)', '损失率', '碳减排(kg)', '净收益(元)'],
+        ['节能优先', energySavings.replace(' kWh', ''), energyMoney.replace(' 元', ''), energyLoss.replace(' 吨', ''), energyLossRate, energyCarbon.replace(' kg', ''), energyProfit.replace(' 元', '')],
+        ['保产优先', productionSavings.replace(' kWh', ''), productionMoney.replace(' 元', ''), productionLoss.replace(' 吨', ''), productionLossRate, productionCarbon.replace(' kg', ''), productionProfit.replace(' 元', '')],
+        ['平衡方案', balancedSavings.replace(' kWh', ''), balancedMoney.replace(' 元', ''), balancedLoss.replace(' 吨', ''), balancedLossRate, balancedCarbon.replace(' kg', ''), balancedProfit.replace(' 元', '')]
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    const wscols = Array(7).fill({wch: 18});
+    ws['!cols'] = wscols;
+    XLSX.utils.book_append_sheet(wb, ws, '单井优化结果');
+    XLSX.writeFile(wb, `抽油机单井优化结果_${new Date().getTime()}.xlsx`);
+}
+
+function exportAdvancedResults() {
+    if (!globalAdvancedResults.energy || !globalAdvancedResults.benefit || !globalAdvancedResults.balanced) {
+        alert('暂无可导出的数据，请先完成计算！');
+        return;
+    }
+
+    const exportData = [
+        ['抽油机井群优化计算结果', '', '', '', '', '', '', ''],
+        ['计算时间', new Date().toLocaleString(), '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['方案类型', '总能耗(kWh)', '碳排放(kg)', '总成本(元)', '总收入(元)', '净利润(元)', '总产量(m³)', '启停次数'],
+        ['节能优先', globalAdvancedResults.energy.total_energy, globalAdvancedResults.energy.total_emission, globalAdvancedResults.energy.total_cost, globalAdvancedResults.energy.revenue, globalAdvancedResults.energy.profit, globalAdvancedResults.energy.total_oil, globalAdvancedResults.energy.total_startups],
+        ['效益最高', globalAdvancedResults.benefit.total_energy, globalAdvancedResults.benefit.total_emission, globalAdvancedResults.benefit.total_cost, globalAdvancedResults.benefit.revenue, globalAdvancedResults.benefit.profit, globalAdvancedResults.benefit.total_oil, globalAdvancedResults.benefit.total_startups],
+        ['平衡方案', globalAdvancedResults.balanced.total_energy, globalAdvancedResults.balanced.total_emission, globalAdvancedResults.balanced.total_cost, globalAdvancedResults.balanced.revenue, globalAdvancedResults.balanced.profit, globalAdvancedResults.balanced.total_oil, globalAdvancedResults.balanced.total_startups]
+    ];
+
+    if (globalAdvancedResults.schedules) {
+        exportData.push(['', '', '', '', '', '', '', '']);
+        exportData.push(['运行计划详情', '', '', '', '', '', '', '']);
+        
+        for (const [schemeName, schedule] of [['节能优先', globalAdvancedResults.schedules.energy], ['效益最高', globalAdvancedResults.schedules.benefit], ['平衡方案', globalAdvancedResults.schedules.balanced]]) {
+            if (schedule) {
+                exportData.push([schemeName + ' - 井号/时段', ...Array.from({length: 24}, (_, i) => `${i}:00`)]);
+                for (let i = 0; i < 6; i++) {
+                    exportData.push([`W0${i + 1}`, ...schedule[i]]);
+                }
+                exportData.push(['', '', '', '', '', '', '', '']);
+            }
+        }
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    const wscols = Array(8).fill({wch: 15});
+    ws['!cols'] = wscols;
+    XLSX.utils.book_append_sheet(wb, ws, '井群优化结果');
+    XLSX.writeFile(wb, `抽油机井群优化结果_${new Date().getTime()}.xlsx`);
+}
+
+function saveBasicToHistory(energy, production, balanced) {
+    const history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    const record = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        type: 'basic',
+        inputs: {
+            power: document.getElementById('power').value,
+            outputValue: document.getElementById('outputValue').value,
+            outputUnit: document.getElementById('outputUnit').value,
+            electricityPrice: document.getElementById('electricityPrice').value,
+            oilPrice: document.getElementById('oilPrice').value,
+            maxLossRatio: document.getElementById('maxLossRatio').value
+        },
+        results: { energy, production, balanced }
+    };
+    history.unshift(record);
+    if (history.length > 10) history.pop();
+    localStorage.setItem('pumpingUnitHistory', JSON.stringify(history));
+}
+
+function saveAdvancedToHistory() {
+    const history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    const wells = getWellParams();
+    const record = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        type: 'advanced',
+        wells,
+        results: {
+            energy: globalAdvancedResults.energy,
+            benefit: globalAdvancedResults.benefit,
+            balanced: globalAdvancedResults.balanced
+        }
+    };
+    history.unshift(record);
+    if (history.length > 10) history.pop();
+    localStorage.setItem('pumpingUnitHistory', JSON.stringify(history));
+}
+
+function loadHistory() {
+    const history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    const historyList = document.getElementById('historyList');
+    const noHistory = document.getElementById('noHistory');
+    
+    if (history.length === 0) {
+        noHistory.style.display = 'block';
+        historyList.innerHTML = '<div class="no-history" id="noHistory">暂无历史记录</div>';
+        return;
+    }
+    
+    noHistory.style.display = 'none';
+    historyList.innerHTML = '';
+    
+    history.forEach(record => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        
+        const typeLabel = record.type === 'advanced' ? '🏭 井群优化' : '📊 单井优化';
+        let summaryHtml = '';
+        
+        if (record.type === 'advanced') {
+            summaryHtml = `
+                <div class="history-summary">
+                    <div class="history-summary-item">井数: <span class="value">${record.wells?.length || 6}口</span></div>
+                    <div class="history-summary-item">最优净利润: <span class="value">${Math.max(record.results.energy?.profit || 0, record.results.benefit?.profit || 0, record.results.balanced?.profit || 0).toFixed(2)}元</span></div>
+                </div>
+            `;
+        } else {
+            summaryHtml = `
+                <div class="history-summary">
+                    <div class="history-summary-item">功率: <span class="value">${record.inputs?.power || '-'} kW</span></div>
+                    <div class="history-summary-item">产量: <span class="value">${record.inputs?.outputValue || '-'} ${record.inputs?.outputUnit === 'day' ? '吨/天' : record.inputs?.outputUnit === 'month' ? '吨/月' : '吨/年'}</span></div>
+                </div>
+            `;
+        }
+        
+        historyItem.innerHTML = `
+            <div class="history-item-header">
+                <div class="history-item-time">${typeLabel} - ${record.timestamp}</div>
+                <div class="history-item-actions">
+                    <button class="history-item-btn view" onclick="viewHistory(${record.id})">查看</button>
+                    <button class="history-item-btn delete" onclick="deleteHistory(${record.id})">删除</button>
+                </div>
+            </div>
+            ${summaryHtml}
+        `;
+        historyList.appendChild(historyItem);
+    });
+}
+
+function toggleHistory() {
+    const historyList = document.getElementById('historyList');
+    if (historyList.style.display === 'none' || historyList.style.display === '') {
+        historyList.style.display = 'block';
+        loadHistory();
+    } else {
+        historyList.style.display = 'none';
+    }
+}
+
+function viewHistory(id) {
+    const history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    const record = history.find(item => item.id === id);
+    if (!record) return;
+    
+    if (record.type === 'advanced') {
+        switchTab('advanced');
+        for (let i = 1; i <= 6; i++) {
+            if (record.wells && record.wells[i - 1]) {
+                document.getElementById(`w${i}_power`).value = record.wells[i - 1].P_rated || 30;
+                document.getElementById(`w${i}_qrate`).value = record.wells[i - 1].q_rate || 0.5;
+                document.getElementById(`w${i}_cost`).value = record.wells[i - 1].c_start || 100;
+            }
+        }
+    } else {
+        switchTab('basic');
+        document.getElementById('power').value = record.inputs?.power || '';
+        document.getElementById('outputValue').value = record.inputs?.outputValue || '';
+        document.getElementById('outputUnit').value = record.inputs?.outputUnit || 'day';
+        document.getElementById('electricityPrice').value = record.inputs?.electricityPrice || '';
+        document.getElementById('oilPrice').value = record.inputs?.oilPrice || '';
+        document.getElementById('maxLossRatio').value = record.inputs?.maxLossRatio || '';
+    }
+    
+    showToast('已加载历史记录参数');
+}
+
+function deleteHistory(id) {
+    if (!confirm('确定要删除这条历史记录吗？')) return;
+    let history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    history = history.filter(item => item.id !== id);
+    localStorage.setItem('pumpingUnitHistory', JSON.stringify(history));
+    loadHistory();
+    showToast('历史记录已删除');
+}
+
+function clearAllHistory() {
+    let history = JSON.parse(localStorage.getItem('pumpingUnitHistory') || '[]');
+    if (history.length === 0) { alert('暂无历史记录可删除'); return; }
+    if (!confirm('确定要清空所有历史记录吗？此操作不可恢复！')) return;
+    localStorage.removeItem('pumpingUnitHistory');
+    loadHistory();
+    showToast('所有历史记录已清空');
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#00ff88;color:#1a1a2e;padding:15px 20px;border-radius:8px;font-weight:bold;z-index:10000;animation:slideIn 0.3s ease-out;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+async function checkBackendHealth() {
+    const statusDiv = document.createElement('div');
+    statusDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9em;
+        z-index: 10000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (response.ok) {
+            statusDiv.textContent = '✅ 后端已连接';
+            statusDiv.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+            statusDiv.style.color = '#1a1a2e';
+        } else {
+            statusDiv.textContent = '❌ 后端未连接';
+            statusDiv.style.background = 'linear-gradient(135deg, #e94560, #c73e54)';
+            statusDiv.style.color = '#fff';
+        }
+    } catch {
+        statusDiv.textContent = '❌ 后端未连接，请先启动 FastAPI 服务';
+        statusDiv.style.background = 'linear-gradient(135deg, #e94560, #c73e54)';
+        statusDiv.style.color = '#fff';
+    }
+    
+    document.body.appendChild(statusDiv);
+}
+
+function fadeIn() {
+    return {
+        from: { opacity: 0, transform: 'translateY(-20px)' },
+        to: { opacity: 1, transform: 'translateY(0)' }
+    };
+}
+
+window.addEventListener('load', function() {
+    loadHistory();
+    
+    window.addEventListener('resize', () => {
+        Object.values(chartInstances).forEach(chart => chart && chart.resize());
+    });
+    
+    checkBackendHealth();
+});
+</script>
+<style>
+/* 专治：图表缩成竖长条、横向超级窄 */
+#loadCurveChart,
+#heatmapChart,
+#radarChart,
+#comparisonChart,
+#basicComparisonChart {
+    width: 1200px !important;
+    min-width: 1200px !important;
+    max-width: 1200px !important;
+    height: 500px !important;
+    display: block !important;
+    margin: 0 auto !important;
+    position: relative !important;
+    z-index: 9999 !important;
+    overflow: visible !important;
+}
+
+/* 强制父容器不能压缩图表 */
+.chart-row, .chart-section, .container {
+    width: 100% !important;
+    min-width: 1200px !important;
+    display: block !important;
+    overflow: visible !important;
+}
+
+/* 强制 ECharts 画布铺满 */
+canvas {
+    width: 1200px !important;
+    height: 500px !important;
+}
+</style>
+
+<script>
+function resizeCharts() {
+    setTimeout(() => {
+        try {
+            let charts = [
+                "loadCurveChart","heatmapChart","radarChart","comparisonChart","basicComparisonChart"
+            ];
+            charts.forEach(id => {
+                let dom = document.getElementById(id);
+                if(dom){
+                    dom.style.width = "1200px";
+                    let chart = echarts.getInstanceByDom(dom);
+                    if(chart) chart.resize({width:1200, height:500});
+                }
+            });
+        }catch(e){}
+    }, 500);
+}
+</script>
+</body>
+</html>

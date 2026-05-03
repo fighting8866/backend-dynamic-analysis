@@ -90,12 +90,15 @@ python smoke_test.py --base-url http://127.0.0.1:8000
 
 ### API 列表（总览）
 
-- `GET /api/health`
-- `GET /api/sample-data`
-- `POST /api/analysis/run`
-- `POST /api/analysis/sensitivity`
-- `GET /api/history`
-- `DELETE /api/history/{record_id}`
+- `GET /health` - 健康检查
+- `GET /api/health` - 健康检查（兼容旧版本）
+- `GET /api/sample-data` - 获取示例数据
+- `POST /api/basic/calculate` - 基础单井优化计算
+- `POST /api/advanced/optimize` - 高级井群优化计算
+- `POST /api/analysis/run` - 完整分析流程
+- `POST /api/analysis/sensitivity` - 敏感性分析
+- `GET /api/history` - 获取历史记录
+- `DELETE /api/history/{record_id}` - 删除历史记录
 
 ### 1. GET `/api/health`
 
@@ -129,7 +132,143 @@ python smoke_test.py --base-url http://127.0.0.1:8000
 - `request_template` 可直接拼装为分析请求
 - `run_request_example` 可直接 POST 到 `/api/analysis/run`
 
-### 3. POST `/api/analysis/run`
+### 3. POST `/api/basic/calculate`
+
+用途：基础单井优化计算。
+
+请求体：
+
+```json
+{
+  "power": 30,
+  "output_value": 10,
+  "output_unit": "day",
+  "electricity_price": 0.65,
+  "oil_price": 3500,
+  "max_loss_ratio": 5
+}
+```
+
+参数说明：
+
+- `power`: 抽油机功率 (kW)，必须大于 0
+- `output_value`: 油井产量，必须大于 0
+- `output_unit`: 产量单位，可选值：`day`、`month`、`year`
+- `electricity_price`: 工业电价 (元/kWh)，必须大于 0
+- `oil_price`: 原油价格 (元/吨)，必须大于 0
+- `max_loss_ratio`: 最大允许产量损失比 (%)，必须在 0-100 之间
+
+返回体：
+
+```json
+{
+  "best_scheme": "production",
+  "schemes": {
+    "energy": {
+      "name": "节能优先",
+      "energy_savings": 36.0,
+      "money_saved": 23.4,
+      "production_loss": 0.5,
+      "loss_rate": 5.0,
+      "carbon_reduction": 21.6,
+      "net_profit": -1726.6
+    },
+    "production": {
+      "name": "保产优先",
+      "energy_savings": 0.36,
+      "money_saved": 0.234,
+      "production_loss": 0.01,
+      "loss_rate": 0.1,
+      "carbon_reduction": 0.216,
+      "net_profit": -34.766
+    },
+    "balanced": {
+      "name": "平衡方案",
+      "energy_savings": 0,
+      "money_saved": 0,
+      "production_loss": 0,
+      "loss_rate": 0,
+      "carbon_reduction": 0,
+      "net_profit": 0
+    }
+  }
+}
+```
+
+### 4. POST `/api/advanced/optimize`
+
+用途：高级井群 24 小时优化计算（6 口井）。
+
+请求体：
+
+```json
+{
+  "wells": [
+    {"id": "W01", "power": 30, "q_rate": 0.5, "startup_cost": 100, "h_min": 4, "h_max": 20},
+    {"id": "W02", "power": 40, "q_rate": 0.7, "startup_cost": 120, "h_min": 4, "h_max": 20},
+    {"id": "W03", "power": 35, "q_rate": 0.6, "startup_cost": 110, "h_min": 4, "h_max": 20},
+    {"id": "W04", "power": 45, "q_rate": 0.8, "startup_cost": 130, "h_min": 4, "h_max": 20},
+    {"id": "W05", "power": 50, "q_rate": 0.9, "startup_cost": 140, "h_min": 4, "h_max": 20},
+    {"id": "W06", "power": 38, "q_rate": 0.65, "startup_cost": 115, "h_min": 4, "h_max": 20}
+  ],
+  "params": {
+    "oil_price": 3500,
+    "carbon_factor": 0.5,
+    "transformer_max": 250,
+    "q_min": 20,
+    "peak_price": 0.8225,
+    "flat_price": 0.6277,
+    "valley_price": 0.4329,
+    "daily_carbon_limit": 1500
+  }
+}
+```
+
+参数说明：
+
+- `wells`: 井参数列表，必须包含 6 口井
+  - `id`: 井编号
+  - `power`: 额定功率 (kW)
+  - `q_rate`: 单位时段产量
+  - `startup_cost`: 启动成本
+  - `h_min`: 最小运行时长 (小时)
+  - `h_max`: 最大运行时长 (小时)
+- `params`: 系统参数
+  - `oil_price`: 原油价格 (元/吨)
+  - `carbon_factor`: 碳排放因子
+  - `transformer_max`: 变压器最大容量 (kW)
+  - `q_min`: 最低日产量要求
+  - `peak_price`: 峰时电价
+  - `flat_price`: 平时电价
+  - `valley_price`: 谷时电价
+  - `daily_carbon_limit`: 日碳排放上限
+
+返回体：
+
+```json
+{
+  "best_scheme": "benefit",
+  "schemes": {
+    "energy": {
+      "name": "节能优先",
+      "total_energy": 数字,
+      "total_emission": 数字,
+      "total_cost": 数字,
+      "revenue": 数字,
+      "profit": 数字,
+      "total_oil": 数字,
+      "peak_load": 数字,
+      "total_startups": 数字,
+      "load_profile": [24个数字],
+      "schedule": [[24个0/1], [24个0/1], ...共6口井]
+    },
+    "benefit": 同上结构,
+    "balanced": 同上结构
+  }
+}
+```
+
+### 5. POST `/api/analysis/run`
 
 用途：执行完整分析流程。
 

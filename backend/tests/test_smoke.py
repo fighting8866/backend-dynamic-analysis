@@ -68,3 +68,23 @@ def test_analysis_sensitivity() -> None:
     assert "cases" in body
     assert len(body["cases"]) >= 1
     assert body["feasible_case_count"] >= 1
+
+
+def test_analysis_auto_optimize_page_style() -> None:
+    """与队友 demo 默认规模一致：6 井，高级参数可省略（走 schema 默认值）。"""
+    payload = {"wells": [{}] * 6}
+    response = client.post("/api/analysis/auto-optimize", json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body.get("mode") == "page_auto_triple"
+    assert "profiles" in body
+    for key in ("energy_first", "benefit_first", "balanced"):
+        assert key in body["profiles"]
+        assert "result" in body["profiles"][key]
+    charts = body.get("charts_payload_page") or {}
+    assert charts.get("load_curve", {}).get("series")
+    assert body.get("recommended_profile") in (None, "energy_first", "benefit_first", "balanced")
+    feasible_any = any(
+        body["profiles"][k]["result"].get("feasible") for k in ("energy_first", "benefit_first", "balanced")
+    )
+    assert feasible_any, body.get("notes")
